@@ -1,0 +1,75 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { createCollection, listCollections, type Collection } from "@/lib/db";
+
+// A row of tappable chips, one per collection ("chapter"), plus a way to make
+// a new one. The parent page decides what happens when a chip is toggled.
+export function ChapterPicker({
+  selectedIds,
+  onToggle,
+}: {
+  selectedIds: Set<string>;
+  onToggle: (collectionId: string, nowSelected: boolean) => void;
+}) {
+  const [collections, setCollections] = useState<Collection[]>([]);
+  const [adding, setAdding] = useState(false);
+  const [newName, setNewName] = useState("");
+
+  useEffect(() => {
+    listCollections().then(setCollections).catch(console.error);
+  }, []);
+
+  async function handleCreate(e: React.FormEvent) {
+    e.preventDefault();
+    if (!newName.trim()) return;
+    const created = await createCollection(newName);
+    setCollections((prev) => [...prev, created].sort((a, b) => a.name.localeCompare(b.name)));
+    onToggle(created.id, true); // a chapter you just made is one you want this recipe in
+    setNewName("");
+    setAdding(false);
+  }
+
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      {collections.map((c) => {
+        const selected = selectedIds.has(c.id);
+        return (
+          <button
+            key={c.id}
+            type="button"
+            onClick={() => onToggle(c.id, !selected)}
+            aria-pressed={selected}
+            className={`rounded-full border px-3 py-1 text-sm transition ${
+              selected ? "border-accent bg-accent text-page" : "border-rule bg-page hover:border-accent"
+            }`}
+          >
+            {c.name}
+          </button>
+        );
+      })}
+
+      {adding ? (
+        <form onSubmit={handleCreate} className="flex gap-1">
+          <input
+            autoFocus
+            value={newName}
+            onChange={(e) => setNewName(e.target.value)}
+            onBlur={() => !newName && setAdding(false)}
+            maxLength={60}
+            placeholder="Chapter name"
+            className="w-36 rounded-full border border-accent bg-page px-3 py-1 text-sm outline-none"
+          />
+        </form>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setAdding(true)}
+          className="rounded-full border border-dashed border-ink-soft/50 px-3 py-1 text-sm text-ink-soft hover:border-accent hover:text-accent"
+        >
+          + New chapter
+        </button>
+      )}
+    </div>
+  );
+}
