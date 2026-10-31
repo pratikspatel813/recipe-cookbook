@@ -1,26 +1,28 @@
 @import "tailwindcss";
 
+/* Cookbook palette: cream paper, warm ink, a tomato-red accent. */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --paper: #f7f1e3;
+  --page: #fffdf7;
+  --ink: #2b2420;
+  --ink-soft: #6b5d52;
+  --rule: #e4d9c3;
+  --accent: #b5452f;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --color-paper: var(--paper);
+  --color-page: var(--page);
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-rule: var(--rule);
+  --color-accent: var(--accent);
+  --font-display: var(--font-playfair);
+  --font-serif: var(--font-lora);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-lora), Georgia, serif;
 }
