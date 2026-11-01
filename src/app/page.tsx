@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { listCollections, listRecipes, type Collection, type SavedRecipe } from "@/lib/db";
+import { track } from "@/lib/analytics";
 
 // The cookbook itself: chapters across the top, recipes below.
 export default function CookbookPage() {
@@ -14,6 +15,11 @@ export default function CookbookPage() {
   useEffect(() => {
     listCollections().then(setCollections).catch(() => setError(true));
   }, []);
+
+  function chooseChapter(chapterId: string | null) {
+    setActiveChapter(chapterId);
+    track("chapter_filtered", { chapter_id: chapterId });
+  }
 
   // Re-run whenever the chosen chapter changes.
   useEffect(() => {
@@ -42,13 +48,13 @@ export default function CookbookPage() {
       {/* Chapter tabs. Only shown once there's at least one chapter. */}
       {collections.length > 0 && (
         <nav className="mt-10 flex flex-wrap justify-center gap-x-6 gap-y-2 border-b border-rule pb-3 font-display">
-          <ChapterTab label="All recipes" active={activeChapter === null} onClick={() => setActiveChapter(null)} />
+          <ChapterTab label="All recipes" active={activeChapter === null} onClick={() => chooseChapter(null)} />
           {collections.map((c) => (
             <ChapterTab
               key={c.id}
               label={`${c.name} (${c.recipeCount})`}
               active={activeChapter === c.id}
-              onClick={() => setActiveChapter(c.id)}
+              onClick={() => chooseChapter(c.id)}
             />
           ))}
         </nav>

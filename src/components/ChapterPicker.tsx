@@ -2,15 +2,18 @@
 
 import { useEffect, useState } from "react";
 import { createCollection, listCollections, type Collection } from "@/lib/db";
+import { track } from "@/lib/analytics";
 
 // A row of tappable chips, one per collection ("chapter"), plus a way to make
 // a new one. The parent page decides what happens when a chip is toggled.
 export function ChapterPicker({
   selectedIds,
   onToggle,
+  source,
 }: {
   selectedIds: Set<string>;
   onToggle: (collectionId: string, nowSelected: boolean) => void;
+  source: "add_page" | "recipe_page"; // where chapters get created, for analytics
 }) {
   const [collections, setCollections] = useState<Collection[]>([]);
   const [adding, setAdding] = useState(false);
@@ -24,6 +27,7 @@ export function ChapterPicker({
     e.preventDefault();
     if (!newName.trim()) return;
     const created = await createCollection(newName);
+    track("chapter_created", { chapter_id: created.id, source });
     setCollections((prev) => [...prev, created].sort((a, b) => a.name.localeCompare(b.name)));
     onToggle(created.id, true); // a chapter you just made is one you want this recipe in
     setNewName("");

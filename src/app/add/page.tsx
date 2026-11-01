@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { Recipe } from "@/lib/recipe";
 import { saveRecipe } from "@/lib/db";
+import { domainOf, track } from "@/lib/analytics";
 import { RecipeCard } from "@/components/RecipeCard";
 import { ChapterPicker } from "@/components/ChapterPicker";
 
@@ -14,7 +15,7 @@ type ImportState =
   | { status: "idle" }
   | { status: "loading" }
   | { status: "error"; message: string }
-  | { status: "done"; recipe: Recipe; msElapsed: number };
+  | { status: "done"; recipe: Recipe; msElapsed: number; importedAt: number };
 
 export default function AddRecipePage() {
   const router = useRouter();
@@ -27,6 +28,8 @@ export default function AddRecipePage() {
   async function handleImport(e: React.FormEvent) {
     e.preventDefault(); // stop the browser from reloading the page
     setState({ status: "loading" });
+    const domain = domainOf(url);
+    track("import_started", { domain });
 
     try {
       const res = await fetch("/api/import", {
@@ -36,10 +39,22 @@ export default function AddRecipePage() {
       });
       const data = await res.json();
 
-      if (data.ok) setState({ status: "done", recipe: data.recipe, msElapsed: data.msElapsed });
-      else setState({ status: "error", message: data.message });
+      if (data.ok) {
+        setState({ status: "done", recipe: data.recipe, msElapsed: data.msElapsed, importedAt: Date.now() });
+        track("import_succeeded", {
+          domain: domain ?? "unknown",
+          ms_elapsed: data.msElapsed,
+          ingredient_count: data.recipe.ingredients.length,
+          step_count: data.recipe.steps.length,
+        });
+      } else {
+        setState({ status: "error", message: data.message });
+        track("import_failed", { domain, failure_reason: data.reason, ms_elapsed: data.msElapsed });
+      }
     } catch {
       setState({ status: "error", message: "Something went wrong. Check your connection and try again." });
+      // The request never reached our server, so it's a different failure from the server-side ones.
+      track("import_failed", { domain, failure_reason: "network_error", ms_elapsed: null });
     }
   }
 
@@ -49,6 +64,13 @@ export default function AddRecipePage() {
     setSaveError(null);
     try {
       const id = await saveRecipe(state.recipe, "url", [...chapterIds]);
+      track("recipe_saved", {
+        recipe_id: id,
+        import_method: "url",
+        domain: domainOf(state.recipe.sourceUrl),
+        chapter_count: chapterIds.size,
+        seconds_since_import: Math.round((Date.now() - state.importedAt) / 1000),
+      });
       router.push(`/recipe/${id}`);
     } catch (err) {
       console.error(err);
@@ -106,7 +128,7 @@ export default function AddRecipePage() {
                 Fetched in {(state.msElapsed / 1000).toFixed(1)}s · File under
               </p>
               <div className="mt-3">
-                <ChapterPicker selectedIds={chapterIds} onToggle={toggleChapter} />
+                <ChapterPicker selectedIds={chapterIds} onToggle={toggleChapter} source="add_page" />
               </div>
               <button
                 onClick={handleSave}

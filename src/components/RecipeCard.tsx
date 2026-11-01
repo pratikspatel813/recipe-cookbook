@@ -5,11 +5,18 @@ import type { Recipe } from "@/lib/recipe";
 
 // One recipe, laid out like a cookbook page: title and details on top,
 // ingredients you can tick off, then numbered steps.
-export function RecipeCard({ recipe }: { recipe: Recipe }) {
+//
+// onCookingStarted fires once, the first time an ingredient is ticked.
+export function RecipeCard({ recipe, onCookingStarted }: { recipe: Recipe; onCookingStarted?: () => void }) {
   // Which ingredients the cook has ticked off. A Set of positions.
   const [checked, setChecked] = useState<Set<number>>(new Set());
+  const [cookingStarted, setCookingStarted] = useState(false);
 
   function toggle(position: number) {
+    if (!cookingStarted) {
+      setCookingStarted(true);
+      onCookingStarted?.();
+    }
     setChecked((prev) => {
       const next = new Set(prev);
       if (next.has(position)) next.delete(position);

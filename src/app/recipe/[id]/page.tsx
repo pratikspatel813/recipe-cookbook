@@ -11,6 +11,7 @@ import {
   removeFromCollection,
   type SavedRecipe,
 } from "@/lib/db";
+import { track } from "@/lib/analytics";
 import { RecipeCard } from "@/components/RecipeCard";
 import { ChapterPicker } from "@/components/ChapterPicker";
 
@@ -23,7 +24,12 @@ export default function RecipePage() {
   const [chapterIds, setChapterIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
-    getRecipe(id).then(setRecipe).catch(() => setRecipe(null));
+    getRecipe(id)
+      .then((r) => {
+        setRecipe(r);
+        if (r) track("recipe_viewed", { recipe_id: r.id });
+      })
+      .catch(() => setRecipe(null));
     getRecipeCollectionIds(id).then((ids) => setChapterIds(new Set(ids))).catch(console.error);
   }, [id]);
 
@@ -42,6 +48,7 @@ export default function RecipePage() {
     try {
       if (selected) await addToCollection(id, collectionId);
       else await removeFromCollection(id, collectionId);
+      track("recipe_chapter_changed", { recipe_id: id, chapter_id: collectionId, action: selected ? "added" : "removed" });
     } catch (err) {
       console.error(err);
       update(!selected);
@@ -51,6 +58,7 @@ export default function RecipePage() {
   async function handleDelete() {
     if (!confirm("Remove this recipe from your cookbook?")) return;
     await deleteRecipe(id);
+    track("recipe_deleted", { recipe_id: id });
     router.push("/");
   }
 
@@ -82,10 +90,15 @@ export default function RecipePage() {
 
       <div className="mt-6 mb-6">
         <p className="mb-2 text-xs uppercase tracking-widest text-ink-soft">Chapters</p>
-        <ChapterPicker selectedIds={chapterIds} onToggle={toggleChapter} />
+        <ChapterPicker selectedIds={chapterIds} onToggle={toggleChapter} source="recipe_page" />
       </div>
 
-      <RecipeCard recipe={recipe} />
+      <RecipeCard
+        recipe={recipe}
+        onCookingStarted={() =>
+          track("cooking_started", { recipe_id: recipe.id, ingredient_count: recipe.ingredients.length })
+        }
+      />
     </main>
   );
 }
