@@ -2,6 +2,8 @@
 
 A recipe app built around one frustration: finding a recipe on TikTok, clicking through to a site full of ads and life stories, copying it into a cluttered notes app, then digging for it again when a friend asks.
 
+**Live app: https://recipe-cookbook-one.vercel.app**
+
 Here you paste a link and get just the recipe, keep everything in one cookbook, and share it in one tap. It's built as a product data science project: every feature logs its own events, and the analysis is in SQL.
 
 ## What it does
