@@ -70,6 +70,7 @@ export default function AddRecipePage() {
         domain: domainOf(state.recipe.sourceUrl),
         chapter_count: chapterIds.size,
         seconds_since_import: Math.round((Date.now() - state.importedAt) / 1000),
+        share_id: null,
       });
       router.push(`/recipe/${id}`);
     } catch (err) {

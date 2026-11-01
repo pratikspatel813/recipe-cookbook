@@ -6,12 +6,13 @@
 // TypeScript uses camelCase (imageUrl). The `toRecipe` function below
 // translates between the two.
 
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { supabase, ensureUser } from "./supabase";
 import type { Recipe } from "./recipe";
 
 export type SavedRecipe = Recipe & { id: string; createdAt: string };
 export type Collection = { id: string; name: string; recipeCount: number };
-export type ImportMethod = "url" | "paste" | "manual";
+export type ImportMethod = "url" | "paste" | "manual" | "shared";
 
 // ---- Recipes ---------------------------------------------------------------
 
@@ -19,11 +20,12 @@ export async function saveRecipe(
   recipe: Recipe,
   importMethod: ImportMethod,
   collectionIds: string[],
+  savedFromShareId: string | null = null,
 ): Promise<string> {
   await ensureUser();
-  // "rpc" = call the save_recipe() function we wrote in schema.sql.
+  // "rpc" = call the save_recipe() function we wrote in the migrations.
   const { data, error } = await supabase.rpc("save_recipe", {
-    recipe: { ...recipe, importMethod },
+    recipe: { ...recipe, importMethod, savedFromShareId },
     collection_ids: collectionIds,
   });
   if (error) throw error;
@@ -65,6 +67,49 @@ export async function getRecipe(id: string): Promise<SavedRecipe | null> {
 export async function deleteRecipe(id: string): Promise<void> {
   const { error } = await supabase.from("recipes").delete().eq("id", id);
   if (error) throw error;
+}
+
+// ---- Sharing ---------------------------------------------------------------
+
+export type SharedRecipe = { shareId: string; sharerId: string; recipe: Recipe & { id: string } };
+
+// Get the share link token for one of your recipes, creating it the first time.
+export async function getOrCreateShareToken(recipeId: string): Promise<{ shareId: string; token: string }> {
+  await ensureUser();
+  const existing = await supabase.from("shares").select("id, token").eq("recipe_id", recipeId).maybeSingle();
+  if (existing.error) throw existing.error;
+  if (existing.data) return { shareId: existing.data.id, token: existing.data.token };
+
+  const created = await supabase.from("shares").insert({ recipe_id: recipeId }).select("id, token").single();
+  if (created.error) throw created.error;
+  return { shareId: created.data.id, token: created.data.token };
+}
+
+// Look up a shared recipe by its token. Works without any user at all, so the
+// server can call it too (with its own client — see app/s/[token]/page.tsx).
+export async function getSharedRecipe(client: SupabaseClient, token: string): Promise<SharedRecipe | null> {
+  const { data, error } = await client.rpc("get_shared_recipe", { share_token: token });
+  if (error) throw error;
+  if (!data) return null;
+  const shared = data as SharedRecipe;
+  shared.recipe.ingredients = shared.recipe.ingredients.map((i) => ({
+    ...i,
+    quantity: i.quantity === null ? null : Number(i.quantity),
+  }));
+  return shared;
+}
+
+// Did I already save a copy of this share? Prevents saving duplicates.
+export async function findMySavedCopy(shareId: string): Promise<string | null> {
+  await ensureUser();
+  const { data, error } = await supabase
+    .from("recipes")
+    .select("id")
+    .eq("saved_from_share_id", shareId)
+    .limit(1)
+    .maybeSingle();
+  if (error) throw error;
+  return data?.id ?? null;
 }
 
 // ---- Collections -----------------------------------------------------------

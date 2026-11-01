@@ -19,10 +19,22 @@ export type EventMap = {
   import_failed: { domain: string | null; failure_reason: string; ms_elapsed: number | null };
   recipe_saved: {
     recipe_id: string;
-    import_method: "url" | "paste" | "manual";
+    import_method: "url" | "paste" | "manual" | "shared";
     domain: string | null;
     chapter_count: number;
     seconds_since_import: number; // how long they looked before deciding to save
+    share_id: string | null; // set when saved from a friend's share link
+  };
+
+  // ---- Sharing loop: shared → opened → saved by a friend ----
+  // method: "native" = the phone's share sheet, "clipboard" = copied the link,
+  // "link_shown" = copying was blocked, so we showed the link to copy by hand
+  recipe_shared: { recipe_id: string; share_id: string; method: "native" | "clipboard" | "link_shown" };
+  share_link_opened: {
+    share_id: string;
+    recipe_id: string;
+    is_owner: boolean; // the sharer checking their own link — exclude from metrics
+    is_new_visitor: boolean; // first time this browser has ever used the app
   };
 
   // ---- Using the cookbook ----

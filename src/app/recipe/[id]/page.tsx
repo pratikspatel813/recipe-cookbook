@@ -14,6 +14,7 @@ import {
 import { track } from "@/lib/analytics";
 import { RecipeCard } from "@/components/RecipeCard";
 import { ChapterPicker } from "@/components/ChapterPicker";
+import { ShareButton } from "@/components/ShareButton";
 
 // One saved recipe. The [id] in the folder name means the URL /recipe/abc-123
 // shows the recipe whose id is "abc-123".
@@ -83,9 +84,12 @@ export default function RecipePage() {
         <Link href="/" className="text-sm italic text-ink-soft hover:text-accent">
           ← Back to cookbook
         </Link>
-        <button onClick={handleDelete} className="text-sm italic text-ink-soft hover:text-accent">
-          Remove
-        </button>
+        <div className="flex items-center gap-4">
+          <button onClick={handleDelete} className="text-sm italic text-ink-soft hover:text-accent">
+            Remove
+          </button>
+          <ShareButton recipeId={recipe.id} title={recipe.title} />
+        </div>
       </div>
 
       <div className="mt-6 mb-6">

@@ -20,6 +20,7 @@ export const supabase = createClient(
 //
 // The promise is cached so several components asking at once only create one user.
 let userPromise: Promise<string> | null = null;
+let createdThisVisit = false;
 
 export function ensureUser(): Promise<string> {
   userPromise ??= (async () => {
@@ -31,7 +32,14 @@ export function ensureUser(): Promise<string> {
       userPromise = null; // let the next call try again
       throw error ?? new Error("Could not start a session");
     }
+    createdThisVisit = true;
     return signIn.user.id;
   })();
   return userPromise;
+}
+
+// True if this page load created the user — i.e. a brand-new visitor.
+// Only meaningful after ensureUser() has finished.
+export function isNewVisitor(): boolean {
+  return createdThisVisit;
 }
