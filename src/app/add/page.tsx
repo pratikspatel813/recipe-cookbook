@@ -9,6 +9,8 @@ import { domainOf, track } from "@/lib/analytics";
 import { RecipeCard } from "@/components/RecipeCard";
 import { ChapterPicker } from "@/components/ChapterPicker";
 import { RecipeForm } from "@/components/RecipeForm";
+import { useAccount } from "@/lib/account";
+import { setRecipePublic } from "@/lib/social";
 
 type Mode = "url" | "manual";
 
@@ -22,6 +24,10 @@ type ImportState =
 
 export default function AddRecipePage() {
   const router = useRouter();
+  const account = useAccount();
+  // Hand-written recipes go on your profile by default, like an Instagram post.
+  // (Anonymous users have no profile yet, so theirs stay private.)
+  const [postToProfile, setPostToProfile] = useState(true);
   const [mode, setMode] = useState<Mode>("url");
   const [manualStartedAt, setManualStartedAt] = useState(0);
   const [url, setUrl] = useState("");
@@ -98,6 +104,10 @@ export default function AddRecipePage() {
     setSaveError(null);
     try {
       const id = await saveRecipe(recipe, "manual", [...chapterIds]);
+      if (account.status === "registered" && postToProfile) {
+        await setRecipePublic(id, true);
+        track("recipe_visibility_changed", { recipe_id: id, is_public: true, source: "add_page" });
+      }
       track("recipe_saved", {
         recipe_id: id,
         import_method: "manual",
@@ -125,8 +135,8 @@ export default function AddRecipePage() {
 
   return (
     <main className="mx-auto max-w-3xl px-4 py-10 sm:py-14">
-      <Link href="/" className="text-sm italic text-ink-soft hover:text-accent">
-        ← Back to cookbook
+      <Link href="/profile" className="text-sm italic text-ink-soft hover:text-accent">
+        ← Back to my cookbook
       </Link>
 
       <header className="mt-6 text-center">
@@ -146,6 +156,17 @@ export default function AddRecipePage() {
       {mode === "manual" && (
         <div className="mt-8">
           <RecipeForm submitLabel="Save to my cookbook" busy={saving} onSubmit={handleManualSave}>
+            {account.status === "registered" && (
+              <label className="mt-6 flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={postToProfile}
+                  onChange={(e) => setPostToProfile(e.target.checked)}
+                  className="size-4 accent-accent"
+                />
+                Post to my profile <span className="italic text-ink-soft">(anyone can find it)</span>
+              </label>
+            )}
             <p className="mt-6 text-xs uppercase tracking-widest text-ink-soft">File under (optional)</p>
             <div className="mt-2">
               <ChapterPicker selectedIds={chapterIds} onToggle={toggleChapter} source="add_page" />

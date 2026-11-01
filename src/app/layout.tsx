@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Playfair_Display, Lora } from "next/font/google";
 import "./globals.css";
 import { PageViewTracker } from "@/components/PageViewTracker";
+import { BottomNav } from "@/components/BottomNav";
 
 // Two serif fonts give the cookbook feel: Playfair for headings, Lora for reading.
 const playfair = Playfair_Display({
@@ -28,7 +29,9 @@ export default function RootLayout({
     <html lang="en">
       <body className={`${playfair.variable} ${lora.variable} antialiased`}>
         <PageViewTracker />
-        {children}
+        {/* Bottom padding so the last thing on a page isn't hidden behind the tab bar. */}
+        <div className="pb-24">{children}</div>
+        <BottomNav />
       </body>
     </html>
   );

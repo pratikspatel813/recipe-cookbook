@@ -106,6 +106,16 @@ export function SharedRecipeView({ shared }: { shared: SharedRecipe }) {
 
       <RecipeCard
         recipe={recipe}
+        onServingsChanged={(c) =>
+          track("servings_scaled", {
+            recipe_id: recipe.id,
+            from: c.from,
+            to: c.to,
+            factor: Math.round(c.factor * 100) / 100,
+            has_base: c.hasBase,
+            surface: "shared_page",
+          })
+        }
         onIngredientLinkClick={(ing) =>
           track("ingredient_link_clicked", {
             recipe_id: recipe.id,

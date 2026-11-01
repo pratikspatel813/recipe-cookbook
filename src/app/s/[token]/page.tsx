@@ -52,7 +52,7 @@ export default async function SharedRecipePage({ params }: Props) {
       <main className="px-4 py-20 text-center">
         <p className="font-display text-3xl">This recipe isn&apos;t available</p>
         <p className="mt-3 italic text-ink-soft">The link may be wrong, or the recipe was removed.</p>
-        <Link href="/" className="mt-6 inline-block italic text-accent underline">
+        <Link href="/profile" className="mt-6 inline-block italic text-accent underline">
           Go to my cookbook
         </Link>
       </main>

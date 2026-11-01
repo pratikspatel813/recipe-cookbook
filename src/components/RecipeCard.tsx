@@ -3,24 +3,41 @@
 import { useState } from "react";
 import type { Ingredient, Recipe } from "@/lib/recipe";
 import { domainOf } from "@/lib/analytics";
+import { baseServings, scaledIngredientText } from "@/lib/scaling";
 
 // One recipe, laid out like a cookbook page: title and details on top,
 // ingredients you can tick off, then numbered steps.
 //
 // onCookingStarted fires once, the first time an ingredient is ticked.
 // onIngredientLinkClick fires when someone taps an ingredient's "Buy" link.
+// onServingsChanged fires when someone scales the recipe up or down.
 export function RecipeCard({
   recipe,
   onCookingStarted,
   onIngredientLinkClick,
+  onServingsChanged,
 }: {
   recipe: Recipe;
   onCookingStarted?: () => void;
   onIngredientLinkClick?: (ingredient: Ingredient) => void;
+  onServingsChanged?: (change: { from: number; to: number; factor: number; hasBase: boolean }) => void;
 }) {
   // Which ingredients the cook has ticked off. A Set of positions.
   const [checked, setChecked] = useState<Set<number>>(new Set());
   const [cookingStarted, setCookingStarted] = useState(false);
+
+  // Scaling. If the recipe says how many it serves, the stepper counts
+  // people (4 → 6). If it doesn't, it counts batches instead (×1 → ×2).
+  const base = baseServings(recipe.servings);
+  const [count, setCount] = useState(base ?? 1);
+  const factor = count / (base ?? 1);
+
+  function changeCount(next: number) {
+    const clamped = Math.min(Math.max(next, 1), base ? base * 10 : 10);
+    if (clamped === count) return;
+    setCount(clamped);
+    onServingsChanged?.({ from: base ?? 1, to: clamped, factor: clamped / (base ?? 1), hasBase: base !== null });
+  }
 
   function toggle(position: number) {
     if (!cookingStarted) {
@@ -61,22 +78,36 @@ export function RecipeCard({
 
         {recipe.description && <p className="mt-4 text-ink-soft">{recipe.description}</p>}
 
-        {(recipe.servings || recipe.totalTimeMinutes) && (
-          <div className="mt-6 flex gap-6 border-y border-rule py-3 text-sm">
-            {recipe.servings && (
-              <div>
-                <span className="block text-xs uppercase tracking-widest text-ink-soft">Serves</span>
-                {recipe.servings}
-              </div>
-            )}
-            {recipe.totalTimeMinutes && (
-              <div>
-                <span className="block text-xs uppercase tracking-widest text-ink-soft">Time</span>
-                {formatMinutes(recipe.totalTimeMinutes)}
-              </div>
-            )}
+        <div className="mt-6 flex flex-wrap items-end gap-x-8 gap-y-3 border-y border-rule py-3 text-sm">
+          <div>
+            <span className="block text-xs uppercase tracking-widest text-ink-soft">{base ? "Serves" : "Batch"}</span>
+            <div className="mt-1 flex items-center gap-3">
+              <StepButton label="Fewer" onClick={() => changeCount(count - 1)} disabled={count <= 1}>
+                −
+              </StepButton>
+              <span className="min-w-8 text-center font-display text-xl" aria-live="polite">
+                {base ? count : `×${count}`}
+              </span>
+              <StepButton label="More" onClick={() => changeCount(count + 1)}>
+                +
+              </StepButton>
+            </div>
           </div>
-        )}
+          {recipe.totalTimeMinutes && (
+            <div>
+              <span className="block text-xs uppercase tracking-widest text-ink-soft">Time</span>
+              <span className="mt-1 block py-1">{formatMinutes(recipe.totalTimeMinutes)}</span>
+            </div>
+          )}
+          {factor !== 1 && (
+            <p className="w-full text-xs italic text-ink-soft">
+              Scaled from the original{recipe.servings ? ` (${recipe.servings})` : ""}.{" "}
+              <button onClick={() => changeCount(base ?? 1)} className="underline hover:text-accent">
+                Reset
+              </button>
+            </p>
+          )}
+        </div>
 
         <div className="mt-8 grid gap-10 md:grid-cols-[2fr_3fr]">
           <section>
@@ -92,7 +123,7 @@ export function RecipeCard({
                       className="mt-1.5 size-4 shrink-0 accent-accent"
                     />
                     <span className={checked.has(ing.position) ? "text-ink-soft line-through" : ""}>
-                      {ing.rawText}
+                      {scaledIngredientText(ing, factor)}
                     </span>
                   </label>
                   {/* Outside the <label>, so tapping the link doesn't also tick the box.
@@ -128,6 +159,30 @@ export function RecipeCard({
         </div>
       </div>
     </article>
+  );
+}
+
+function StepButton({
+  label,
+  onClick,
+  disabled,
+  children,
+}: {
+  label: string;
+  onClick: () => void;
+  disabled?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      onClick={onClick}
+      disabled={disabled}
+      className="flex size-8 items-center justify-center rounded-full border border-rule text-lg leading-none transition hover:border-accent hover:text-accent disabled:opacity-30"
+    >
+      {children}
+    </button>
   );
 }
 

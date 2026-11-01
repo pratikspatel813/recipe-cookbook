@@ -10,9 +10,20 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { supabase, ensureUser } from "./supabase";
 import type { Recipe } from "./recipe";
 
-export type SavedRecipe = Recipe & { id: string; createdAt: string; importMethod: ImportMethod | null };
+export type SavedRecipe = Recipe & {
+  id: string;
+  createdAt: string;
+  importMethod: ImportMethod | null;
+  ownerId: string;
+  isPublic: boolean;
+};
 export type Collection = { id: string; name: string; recipeCount: number };
-export type ImportMethod = "url" | "paste" | "manual" | "shared";
+export type ImportMethod = "url" | "paste" | "manual" | "shared" | "ai";
+
+// Only recipes you made yourself can be public (the database enforces this too).
+export function canBePublic(method: ImportMethod | null): boolean {
+  return method === "manual" || method === "ai";
+}
 
 // ---- Recipes ---------------------------------------------------------------
 
@@ -35,7 +46,7 @@ export async function saveRecipe(
 // The cookbook's table of contents. Optionally filtered to one collection.
 // We only need a few columns here, not every ingredient and step.
 export async function listRecipes(collectionId?: string): Promise<SavedRecipe[]> {
-  await ensureUser();
+  const userId = await ensureUser();
   // With a collection: INNER JOIN to collection_recipes, which keeps only
   // recipes that have a matching link row. Same idea as in SQL.
   const query = collectionId
@@ -45,7 +56,10 @@ export async function listRecipes(collectionId?: string): Promise<SavedRecipe[]>
         .eq("collection_recipes.collection_id", collectionId)
     : supabase.from("recipes").select("*");
 
-  const { data, error } = await query.order("created_at", { ascending: false });
+  // RLS now also lets us SEE other people's public recipes, so "my cookbook"
+  // must ask for my recipes explicitly. Permission ≠ intent: what you're
+  // allowed to read isn't the same as what this screen should show.
+  const { data, error } = await query.eq("owner_id", userId).order("created_at", { ascending: false });
   if (error) throw error;
   return data.map((row) => toRecipe(row));
 }
@@ -202,6 +216,8 @@ function toRecipe(row: Row): SavedRecipe {
     id: row.id as string,
     createdAt: row.created_at as string,
     importMethod: (row.import_method as ImportMethod | undefined) ?? null,
+    ownerId: row.owner_id as string,
+    isPublic: (row.is_public as boolean | undefined) ?? false,
     title: row.title as string,
     description: row.description as string | null,
     imageUrl: row.image_url as string | null,

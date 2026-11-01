@@ -46,8 +46,8 @@ export default function EditRecipePage() {
     return (
       <main className="py-20 text-center">
         <p className="font-display text-2xl">Recipe not found</p>
-        <Link href="/" className="mt-4 inline-block italic text-accent underline">
-          Back to cookbook
+        <Link href="/profile" className="mt-4 inline-block italic text-accent underline">
+          Back to my cookbook
         </Link>
       </main>
     );

@@ -86,6 +86,7 @@ export function ShareButton({ recipeId, title }: { recipeId: string; title: stri
       )}
       {showSignUp && (
         <SignUpDialog
+          trigger="share"
           onClose={() => setShowSignUp(false)}
           doneLabel="Share this recipe"
           onDone={() => {

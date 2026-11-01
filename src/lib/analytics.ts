@@ -9,6 +9,9 @@
 
 import { supabase, ensureUser } from "./supabase";
 
+// What made someone create an account.
+export type SignupTrigger = "share" | "follow" | "publish";
+
 export type EventMap = {
   // ---- Navigation ----
   page_viewed: { path: string; referrer_domain: string | null };
@@ -19,7 +22,7 @@ export type EventMap = {
   import_failed: { domain: string | null; failure_reason: string; ms_elapsed: number | null };
   recipe_saved: {
     recipe_id: string;
-    import_method: "url" | "paste" | "manual" | "shared";
+    import_method: "url" | "paste" | "manual" | "shared" | "ai";
     domain: string | null;
     chapter_count: number;
     seconds_since_import: number; // how long they looked before deciding to save
@@ -27,13 +30,13 @@ export type EventMap = {
   };
 
   // ---- Accounts: prompted → code sent → completed ----
-  // trigger = what made them sign up. Only "share" for now, but naming it
-  // means we can compare triggers later if we add more.
-  signup_prompted: { trigger: "share" };
-  signup_code_sent: { trigger: "share" };
-  signup_completed: { trigger: "share"; seconds_to_complete: number };
+  // trigger = what made them sign up: sharing, following someone, or posting.
+  // Comparing triggers shows which feature people find worth an account.
+  signup_prompted: { trigger: SignupTrigger };
+  signup_code_sent: { trigger: SignupTrigger };
+  signup_completed: { trigger: SignupTrigger; seconds_to_complete: number };
   // error_code is Supabase's short error name, e.g. "otp_expired".
-  signup_failed: { trigger: "share"; step: "send_code" | "verify_code"; error_code: string };
+  signup_failed: { trigger: SignupTrigger; step: "send_code" | "verify_code"; error_code: string };
   signin_completed: Record<string, never>;
   signed_out: Record<string, never>;
 
@@ -61,9 +64,40 @@ export type EventMap = {
     ingredient_position: number;
     ingredient_name: string;
     link_domain: string | null;
-    surface: "own_recipe" | "shared_page";
+    surface: "own_recipe" | "shared_page" | "public_post";
     share_id: string | null;
   };
+
+  // ---- Scaling: do people cook for more (or fewer) than the recipe says? ----
+  // has_base = the recipe stated its servings, so from/to are people;
+  // otherwise from/to are batches (×1 → ×2).
+  servings_scaled: {
+    recipe_id: string;
+    from: number;
+    to: number;
+    factor: number;
+    has_base: boolean;
+    surface: "own_recipe" | "shared_page" | "public_post";
+  };
+
+  // ---- Social: profiles, follows, feed, search ----
+  feed_viewed: { post_count: number; following_count: number };
+  profile_viewed: { profile_id: string; is_own: boolean; tab: "posts" | "cookbook" };
+  followed: { profile_id: string; source: "profile" | "search" };
+  unfollowed: { profile_id: string };
+  // A post was put on (or taken off) a profile.
+  recipe_visibility_changed: { recipe_id: string; is_public: boolean; source: "recipe_page" | "add_page" };
+  // query_length, not the query itself: search text can contain personal info.
+  search_performed: { tab: "recipes" | "people"; query_length: number; result_count: number };
+  search_result_clicked: { tab: "recipes" | "people"; position: number; result_id: string };
+  // Saving a copy of someone else's public post (from feed, search or profile).
+  post_saved: { source_recipe_id: string; new_recipe_id: string; owner_id: string };
+
+  // ---- AI page ----
+  // restrictions = the chips they picked ("no_onion", "vegan"…); has_notes = typed extra instructions.
+  ai_requested: { mode: "adapt" | "create"; restrictions: string[]; has_notes: boolean };
+  ai_succeeded: { mode: "adapt" | "create"; ms_elapsed: number; ingredient_count: number };
+  ai_failed: { mode: "adapt" | "create"; reason: string };
 
   // ---- Using the cookbook ----
   // fields_changed lists what was edited, e.g. ["ingredients", "steps"], so
@@ -74,7 +108,8 @@ export type EventMap = {
     fields_changed: string[];
     ingredient_count_change: number;
   };
-  recipe_viewed: { recipe_id: string };
+  // is_owner false = someone viewing another person's public post.
+  recipe_viewed: { recipe_id: string; is_owner: boolean };
   // Fired the first time someone ticks an ingredient in a visit to a recipe.
   // Our best signal that they're actually COOKING, not just browsing.
   cooking_started: { recipe_id: string; ingredient_count: number };

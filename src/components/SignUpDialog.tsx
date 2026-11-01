@@ -3,22 +3,31 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { finishSignUp, startSignUp } from "@/lib/account";
-import { track } from "@/lib/analytics";
+import { track, type SignupTrigger } from "@/lib/analytics";
 
 // A three-step dialog: name + email → code from your inbox → done.
-// Shown when an anonymous user taps Share.
+// Shown when an anonymous user tries something that needs an account:
+// sharing, following someone, or posting a recipe to their profile.
 //
-// The last step has its own button rather than sharing automatically: phones
-// only open the share sheet straight after a tap, and by the time the code is
-// checked, the original tap is long gone.
+// The last step has its own button rather than continuing automatically:
+// phones only open the share sheet straight after a tap, and by the time the
+// code is checked, the original tap is long gone.
 
 type Step = { name: "details" } | { name: "code" } | { name: "done" };
 
+const HEADLINES: Record<SignupTrigger, string> = {
+  share: "Save your cookbook to share",
+  follow: "Create your profile to follow",
+  publish: "Create your profile to post",
+};
+
 export function SignUpDialog({
+  trigger,
   onClose,
   onDone,
   doneLabel,
 }: {
+  trigger: SignupTrigger;
   onClose: () => void;
   onDone: () => void;
   doneLabel: string;
@@ -32,8 +41,8 @@ export function SignUpDialog({
   const openedAt = useRef(Date.now());
 
   useEffect(() => {
-    track("signup_prompted", { trigger: "share" });
-  }, []);
+    track("signup_prompted", { trigger });
+  }, [trigger]);
 
   async function sendCode(e: React.FormEvent) {
     e.preventDefault();
@@ -41,11 +50,11 @@ export function SignUpDialog({
     setError(null);
     try {
       await startSignUp(displayName, email);
-      track("signup_code_sent", { trigger: "share" });
+      track("signup_code_sent", { trigger });
       setStep({ name: "code" });
     } catch (err) {
       const code = errorCode(err);
-      track("signup_failed", { trigger: "share", step: "send_code", error_code: code });
+      track("signup_failed", { trigger, step: "send_code", error_code: code });
       setError(
         code === "email_exists" ? (
           <>
@@ -72,12 +81,12 @@ export function SignUpDialog({
     try {
       await finishSignUp(email, code);
       track("signup_completed", {
-        trigger: "share",
+        trigger,
         seconds_to_complete: Math.round((Date.now() - openedAt.current) / 1000),
       });
       setStep({ name: "done" });
     } catch (err) {
-      track("signup_failed", { trigger: "share", step: "verify_code", error_code: errorCode(err) });
+      track("signup_failed", { trigger, step: "verify_code", error_code: errorCode(err) });
       setError("That code didn't work. Check it, or go back and send a new one.");
     } finally {
       setBusy(false);
@@ -94,9 +103,9 @@ export function SignUpDialog({
       >
         {step.name === "details" && (
           <form onSubmit={sendCode}>
-            <h2 className="font-display text-2xl">Save your cookbook to share</h2>
+            <h2 className="font-display text-2xl">{HEADLINES[trigger]}</h2>
             <p className="mt-2 text-sm italic text-ink-soft">
-              Your recipes stay exactly where they are. Your friends will see your name on what you share.
+              Your recipes stay exactly where they are. People will see your first name on what you share and post.
             </p>
             <label className="mt-5 block text-xs uppercase tracking-widest text-ink-soft">
               Your first name
