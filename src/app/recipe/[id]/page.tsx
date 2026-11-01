@@ -11,7 +11,7 @@ import {
   removeFromCollection,
   type SavedRecipe,
 } from "@/lib/db";
-import { track } from "@/lib/analytics";
+import { domainOf, track } from "@/lib/analytics";
 import { RecipeCard } from "@/components/RecipeCard";
 import { ChapterPicker } from "@/components/ChapterPicker";
 import { ShareButton } from "@/components/ShareButton";
@@ -88,6 +88,9 @@ export default function RecipePage() {
           <button onClick={handleDelete} className="text-sm italic text-ink-soft hover:text-accent">
             Remove
           </button>
+          <Link href={`/recipe/${recipe.id}/edit`} className="text-sm italic text-ink-soft hover:text-accent">
+            Edit
+          </Link>
           <ShareButton recipeId={recipe.id} title={recipe.title} />
         </div>
       </div>
@@ -101,6 +104,16 @@ export default function RecipePage() {
         recipe={recipe}
         onCookingStarted={() =>
           track("cooking_started", { recipe_id: recipe.id, ingredient_count: recipe.ingredients.length })
+        }
+        onIngredientLinkClick={(ing) =>
+          track("ingredient_link_clicked", {
+            recipe_id: recipe.id,
+            ingredient_position: ing.position,
+            ingredient_name: ing.name,
+            link_domain: domainOf(ing.linkUrl),
+            surface: "own_recipe",
+            share_id: null,
+          })
         }
       />
     </main>

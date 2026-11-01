@@ -48,7 +48,32 @@ export type EventMap = {
     is_new_visitor: boolean; // first time this browser has ever used the app
   };
 
+  // ---- Writing your own: chose "Write my own" → saved (recipe_saved, import_method "manual") ----
+  // Logged when someone switches tabs on the Add page, so we can see which
+  // way people prefer to add recipes.
+  add_mode_selected: { mode: "url" | "manual" };
+
+  // ---- Shopping links: the future affiliate revenue ----
+  // surface tells us WHERE the click happened. Clicks from friends on shared
+  // pages matter most — that's the creator-earns-from-sharing model.
+  ingredient_link_clicked: {
+    recipe_id: string;
+    ingredient_position: number;
+    ingredient_name: string;
+    link_domain: string | null;
+    surface: "own_recipe" | "shared_page";
+    share_id: string | null;
+  };
+
   // ---- Using the cookbook ----
+  // fields_changed lists what was edited, e.g. ["ingredients", "steps"], so
+  // we can see WHAT people fix — a sign of which parts our import gets wrong.
+  recipe_edited: {
+    recipe_id: string;
+    import_method: string | null;
+    fields_changed: string[];
+    ingredient_count_change: number;
+  };
   recipe_viewed: { recipe_id: string };
   // Fired the first time someone ticks an ingredient in a visit to a recipe.
   // Our best signal that they're actually COOKING, not just browsing.

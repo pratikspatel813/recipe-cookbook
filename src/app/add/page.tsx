@@ -8,6 +8,9 @@ import { saveRecipe } from "@/lib/db";
 import { domainOf, track } from "@/lib/analytics";
 import { RecipeCard } from "@/components/RecipeCard";
 import { ChapterPicker } from "@/components/ChapterPicker";
+import { RecipeForm } from "@/components/RecipeForm";
+
+type Mode = "url" | "manual";
 
 // The page has four possible states. Writing them out like this means the
 // screen can never be "loading" and "showing an error" at the same time.
@@ -19,6 +22,8 @@ type ImportState =
 
 export default function AddRecipePage() {
   const router = useRouter();
+  const [mode, setMode] = useState<Mode>("url");
+  const [manualStartedAt, setManualStartedAt] = useState(0);
   const [url, setUrl] = useState("");
   const [state, setState] = useState<ImportState>({ status: "idle" });
   const [chapterIds, setChapterIds] = useState<Set<string>>(new Set());
@@ -80,6 +85,35 @@ export default function AddRecipePage() {
     }
   }
 
+  function chooseMode(next: Mode) {
+    if (next === mode) return;
+    setMode(next);
+    setSaveError(null);
+    if (next === "manual") setManualStartedAt(Date.now());
+    track("add_mode_selected", { mode: next });
+  }
+
+  async function handleManualSave(recipe: Recipe) {
+    setSaving(true);
+    setSaveError(null);
+    try {
+      const id = await saveRecipe(recipe, "manual", [...chapterIds]);
+      track("recipe_saved", {
+        recipe_id: id,
+        import_method: "manual",
+        domain: domainOf(recipe.sourceUrl),
+        chapter_count: chapterIds.size,
+        seconds_since_import: Math.round((Date.now() - manualStartedAt) / 1000), // time spent writing
+        share_id: null,
+      });
+      router.push(`/recipe/${id}`);
+    } catch (err) {
+      console.error(err);
+      setSaveError("Couldn't save the recipe. Please try again.");
+      setSaving(false);
+    }
+  }
+
   function toggleChapter(id: string, selected: boolean) {
     setChapterIds((prev) => {
       const next = new Set(prev);
@@ -97,53 +131,97 @@ export default function AddRecipePage() {
 
       <header className="mt-6 text-center">
         <h1 className="font-display text-4xl sm:text-5xl">Add a recipe</h1>
-        <p className="mt-3 italic text-ink-soft">Paste a recipe link. Skip the ads and the life story.</p>
+        <p className="mt-3 italic text-ink-soft">
+          {mode === "url"
+            ? "Paste a recipe link. Skip the ads and the life story."
+            : "Your own recipe, or one from your notes app."}
+        </p>
       </header>
 
-      <form onSubmit={handleImport} className="mt-8 flex flex-col gap-3 sm:flex-row">
-        <input
-          type="url"
-          required
-          value={url}
-          onChange={(e) => setUrl(e.target.value)}
-          placeholder="https://www.example.com/best-banana-bread"
-          className="min-w-0 flex-1 rounded-sm border border-rule bg-page px-4 py-3 outline-none placeholder:text-ink-soft/60 focus:border-accent"
-        />
-        <button
-          type="submit"
-          disabled={state.status === "loading"}
-          className="rounded-sm bg-accent px-6 py-3 font-display text-page transition hover:brightness-110 disabled:opacity-60"
-        >
-          {state.status === "loading" ? "Fetching…" : "Get recipe"}
-        </button>
-      </form>
+      <nav className="mt-8 flex justify-center gap-6 border-b border-rule font-display">
+        <ModeTab label="From a link" active={mode === "url"} onClick={() => chooseMode("url")} />
+        <ModeTab label="Write my own" active={mode === "manual"} onClick={() => chooseMode("manual")} />
+      </nav>
 
-      <div className="mt-10">
-        {state.status === "error" && (
-          <p className="rounded-sm border border-accent/30 bg-page px-4 py-3 text-accent">{state.message}</p>
-        )}
-        {state.status === "done" && (
-          <>
-            <section className="mb-6 rounded-sm border border-rule bg-page px-5 py-4">
-              <p className="text-xs uppercase tracking-widest text-ink-soft">
-                Fetched in {(state.msElapsed / 1000).toFixed(1)}s · File under
-              </p>
-              <div className="mt-3">
-                <ChapterPicker selectedIds={chapterIds} onToggle={toggleChapter} source="add_page" />
+      {mode === "manual" && (
+        <div className="mt-8">
+          <RecipeForm submitLabel="Save to my cookbook" busy={saving} onSubmit={handleManualSave}>
+            <p className="mt-6 text-xs uppercase tracking-widest text-ink-soft">File under (optional)</p>
+            <div className="mt-2">
+              <ChapterPicker selectedIds={chapterIds} onToggle={toggleChapter} source="add_page" />
+            </div>
+          </RecipeForm>
+          {saveError && <p className="mt-2 text-sm text-accent">{saveError}</p>}
+        </div>
+      )}
+
+      {mode === "url" && (
+        <>
+          <form onSubmit={handleImport} className="mt-8 flex flex-col gap-3 sm:flex-row">
+            <input
+              type="url"
+              required
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+              placeholder="https://www.example.com/best-banana-bread"
+              className="min-w-0 flex-1 rounded-sm border border-rule bg-page px-4 py-3 outline-none placeholder:text-ink-soft/60 focus:border-accent"
+            />
+            <button
+              type="submit"
+              disabled={state.status === "loading"}
+              className="rounded-sm bg-accent px-6 py-3 font-display text-page transition hover:brightness-110 disabled:opacity-60"
+            >
+              {state.status === "loading" ? "Fetching…" : "Get recipe"}
+            </button>
+          </form>
+
+          <div className="mt-10">
+            {state.status === "error" && (
+              <div className="rounded-sm border border-accent/30 bg-page px-4 py-3">
+                <p className="text-accent">{state.message}</p>
+                <button
+                  onClick={() => chooseMode("manual")}
+                  className="mt-1 text-sm italic text-ink-soft underline hover:text-accent"
+                >
+                  Copy it in yourself instead →
+                </button>
               </div>
-              <button
-                onClick={handleSave}
-                disabled={saving}
-                className="mt-4 w-full rounded-sm bg-accent px-6 py-3 font-display text-page transition hover:brightness-110 disabled:opacity-60 sm:w-auto"
-              >
-                {saving ? "Saving…" : "Save to my cookbook"}
-              </button>
-              {saveError && <p className="mt-2 text-sm text-accent">{saveError}</p>}
-            </section>
-            <RecipeCard recipe={state.recipe} />
-          </>
-        )}
-      </div>
+            )}
+            {state.status === "done" && (
+              <>
+                <section className="mb-6 rounded-sm border border-rule bg-page px-5 py-4">
+                  <p className="text-xs uppercase tracking-widest text-ink-soft">
+                    Fetched in {(state.msElapsed / 1000).toFixed(1)}s · File under
+                  </p>
+                  <div className="mt-3">
+                    <ChapterPicker selectedIds={chapterIds} onToggle={toggleChapter} source="add_page" />
+                  </div>
+                  <button
+                    onClick={handleSave}
+                    disabled={saving}
+                    className="mt-4 w-full rounded-sm bg-accent px-6 py-3 font-display text-page transition hover:brightness-110 disabled:opacity-60 sm:w-auto"
+                  >
+                    {saving ? "Saving…" : "Save to my cookbook"}
+                  </button>
+                  {saveError && <p className="mt-2 text-sm text-accent">{saveError}</p>}
+                </section>
+                <RecipeCard recipe={state.recipe} />
+              </>
+            )}
+          </div>
+        </>
+      )}
     </main>
+  );
+}
+
+function ModeTab({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      className={`-mb-px border-b-2 pb-2 transition ${active ? "border-accent text-accent" : "border-transparent text-ink-soft hover:text-ink"}`}
+    >
+      {label}
+    </button>
   );
 }

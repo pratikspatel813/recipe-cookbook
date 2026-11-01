@@ -10,7 +10,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { supabase, ensureUser } from "./supabase";
 import type { Recipe } from "./recipe";
 
-export type SavedRecipe = Recipe & { id: string; createdAt: string };
+export type SavedRecipe = Recipe & { id: string; createdAt: string; importMethod: ImportMethod | null };
 export type Collection = { id: string; name: string; recipeCount: number };
 export type ImportMethod = "url" | "paste" | "manual" | "shared";
 
@@ -62,6 +62,13 @@ export async function getRecipe(id: string): Promise<SavedRecipe | null> {
     .maybeSingle();
   if (error) throw error;
   return data ? toRecipe(data) : null;
+}
+
+// Replace a recipe's details, ingredients and steps (the update_recipe() SQL function).
+export async function updateRecipe(id: string, recipe: Recipe): Promise<void> {
+  await ensureUser();
+  const { error } = await supabase.rpc("update_recipe", { recipe_id: id, recipe });
+  if (error) throw error;
 }
 
 export async function deleteRecipe(id: string): Promise<void> {
@@ -183,6 +190,7 @@ function toRecipe(row: Row): SavedRecipe {
       unit: i.unit as string | null,
       name: i.name as string,
       rawText: i.raw_text as string,
+      linkUrl: (i.link_url as string | null | undefined) ?? null,
     }))
     .sort((a, b) => a.position - b.position);
 
@@ -193,6 +201,7 @@ function toRecipe(row: Row): SavedRecipe {
   return {
     id: row.id as string,
     createdAt: row.created_at as string,
+    importMethod: (row.import_method as ImportMethod | undefined) ?? null,
     title: row.title as string,
     description: row.description as string | null,
     imageUrl: row.image_url as string | null,

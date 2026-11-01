@@ -104,7 +104,19 @@ export function SharedRecipeView({ shared }: { shared: SharedRecipe }) {
         )}
       </section>
 
-      <RecipeCard recipe={recipe} />
+      <RecipeCard
+        recipe={recipe}
+        onIngredientLinkClick={(ing) =>
+          track("ingredient_link_clicked", {
+            recipe_id: recipe.id,
+            ingredient_position: ing.position,
+            ingredient_name: ing.name,
+            link_domain: domainOf(ing.linkUrl),
+            surface: "shared_page",
+            share_id: shareId,
+          })
+        }
+      />
 
       <p className="mt-10 text-center text-sm italic text-ink-soft">
         Tired of recipe sites full of ads?{" "}

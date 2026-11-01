@@ -1,13 +1,23 @@
 "use client";
 
 import { useState } from "react";
-import type { Recipe } from "@/lib/recipe";
+import type { Ingredient, Recipe } from "@/lib/recipe";
+import { domainOf } from "@/lib/analytics";
 
 // One recipe, laid out like a cookbook page: title and details on top,
 // ingredients you can tick off, then numbered steps.
 //
 // onCookingStarted fires once, the first time an ingredient is ticked.
-export function RecipeCard({ recipe, onCookingStarted }: { recipe: Recipe; onCookingStarted?: () => void }) {
+// onIngredientLinkClick fires when someone taps an ingredient's "Buy" link.
+export function RecipeCard({
+  recipe,
+  onCookingStarted,
+  onIngredientLinkClick,
+}: {
+  recipe: Recipe;
+  onCookingStarted?: () => void;
+  onIngredientLinkClick?: (ingredient: Ingredient) => void;
+}) {
   // Which ingredients the cook has ticked off. A Set of positions.
   const [checked, setChecked] = useState<Set<number>>(new Set());
   const [cookingStarted, setCookingStarted] = useState(false);
@@ -73,7 +83,7 @@ export function RecipeCard({ recipe, onCookingStarted }: { recipe: Recipe; onCoo
             <h3 className="font-display text-xl text-accent">Ingredients</h3>
             <ul className="mt-4 space-y-2">
               {recipe.ingredients.map((ing) => (
-                <li key={ing.position}>
+                <li key={ing.position} className="flex items-start justify-between gap-3">
                   <label className="flex cursor-pointer items-start gap-3">
                     <input
                       type="checkbox"
@@ -85,6 +95,20 @@ export function RecipeCard({ recipe, onCookingStarted }: { recipe: Recipe; onCoo
                       {ing.rawText}
                     </span>
                   </label>
+                  {/* Outside the <label>, so tapping the link doesn't also tick the box.
+                      rel="sponsored" tells search engines it may be an affiliate link. */}
+                  {ing.linkUrl && (
+                    <a
+                      href={ing.linkUrl}
+                      target="_blank"
+                      rel="noopener noreferrer sponsored"
+                      onClick={() => onIngredientLinkClick?.(ing)}
+                      title={domainOf(ing.linkUrl) ?? undefined}
+                      className="mt-0.5 shrink-0 rounded-full border border-rule px-2 text-xs italic text-ink-soft transition hover:border-accent hover:text-accent"
+                    >
+                      Buy ↗
+                    </a>
+                  )}
                 </li>
               ))}
             </ul>

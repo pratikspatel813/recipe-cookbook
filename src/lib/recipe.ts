@@ -9,6 +9,7 @@ export type Ingredient = {
   unit: string | null; // "cup"
   name: string; // "all-purpose flour"
   rawText: string; // "1 1/2 cups all-purpose flour" — always keep the original
+  linkUrl?: string | null; // optional "where to buy it" link, added by the recipe owner
 };
 
 export type Step = {
