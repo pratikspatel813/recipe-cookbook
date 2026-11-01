@@ -3,15 +3,26 @@
 import { useState } from "react";
 import { getOrCreateShareToken } from "@/lib/db";
 import { track } from "@/lib/analytics";
+import { useAccount } from "@/lib/account";
+import { SignUpDialog } from "./SignUpDialog";
 
 // On phones this opens the native share sheet (Messages, WhatsApp, ...).
 // Where that isn't available, it copies the link instead. And where copying is
 // blocked too (some in-app browsers), it shows the link for copying by hand.
+//
+// Sharing needs an account, so anonymous users see the sign-up dialog first.
 export function ShareButton({ recipeId, title }: { recipeId: string; title: string }) {
+  const account = useAccount();
   const [status, setStatus] = useState<"idle" | "working" | "copied" | "error">("idle");
   const [manualUrl, setManualUrl] = useState<string | null>(null);
+  const [showSignUp, setShowSignUp] = useState(false);
 
-  async function handleShare() {
+  function handleClick() {
+    if (account.status === "anonymous") setShowSignUp(true);
+    else share();
+  }
+
+  async function share() {
     setStatus("working");
     try {
       const { shareId, token } = await getOrCreateShareToken(recipeId);
@@ -52,8 +63,8 @@ export function ShareButton({ recipeId, title }: { recipeId: string; title: stri
   return (
     <div className="relative">
       <button
-        onClick={handleShare}
-        disabled={status === "working"}
+        onClick={handleClick}
+        disabled={status === "working" || account.status === "loading"}
         className="rounded-sm bg-accent px-4 py-1.5 font-display text-sm text-page transition hover:brightness-110 disabled:opacity-60"
       >
         {label}
@@ -72,6 +83,16 @@ export function ShareButton({ recipeId, title }: { recipeId: string; title: stri
             Close
           </button>
         </div>
+      )}
+      {showSignUp && (
+        <SignUpDialog
+          onClose={() => setShowSignUp(false)}
+          doneLabel="Share this recipe"
+          onDone={() => {
+            setShowSignUp(false);
+            share();
+          }}
+        />
       )}
     </div>
   );

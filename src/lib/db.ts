@@ -71,7 +71,12 @@ export async function deleteRecipe(id: string): Promise<void> {
 
 // ---- Sharing ---------------------------------------------------------------
 
-export type SharedRecipe = { shareId: string; sharerId: string; recipe: Recipe & { id: string } };
+export type SharedRecipe = {
+  shareId: string;
+  sharerId: string;
+  sharerName: string | null; // null for links made before accounts existed
+  recipe: Recipe & { id: string };
+};
 
 // Get the share link token for one of your recipes, creating it the first time.
 export async function getOrCreateShareToken(recipeId: string): Promise<{ shareId: string; token: string }> {

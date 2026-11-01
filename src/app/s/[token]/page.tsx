@@ -31,11 +31,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!shared) return { title: "Recipe not found" };
   const { recipe } = shared;
   const description = recipe.description ?? "A recipe shared from a friend's cookbook.";
+  // e.g. "Easy pancakes · from Pratik's cookbook" — a name you know gets more taps.
+  const title = shared.sharerName ? `${recipe.title} · from ${shared.sharerName}'s cookbook` : recipe.title;
   return {
-    title: recipe.title,
+    title,
     description,
     openGraph: {
-      title: recipe.title,
+      title,
       description,
       images: recipe.imageUrl ? [recipe.imageUrl] : [],
     },

@@ -17,7 +17,7 @@ type Viewer =
   | { status: "guest"; savedCopyId: string | null };
 
 export function SharedRecipeView({ shared }: { shared: SharedRecipe }) {
-  const { shareId, sharerId, recipe } = shared;
+  const { shareId, sharerId, sharerName, recipe } = shared;
   const [viewer, setViewer] = useState<Viewer>({ status: "loading" });
   const [saving, setSaving] = useState(false);
   const openedAt = useRef(Date.now());
@@ -63,8 +63,10 @@ export function SharedRecipeView({ shared }: { shared: SharedRecipe }) {
   return (
     <main className="mx-auto max-w-3xl px-4 py-10 sm:py-14">
       <header className="text-center">
-        <p className="text-xs uppercase tracking-[0.3em] text-ink-soft">Shared from a friend&apos;s</p>
-        <p className="font-display text-3xl">Cookbook</p>
+        <p className="text-xs uppercase tracking-[0.3em] text-ink-soft">
+          {sharerName ? "From the cookbook of" : "Shared from a friend's"}
+        </p>
+        <p className="font-display text-3xl">{sharerName ?? "Cookbook"}</p>
       </header>
 
       <section className="my-6 rounded-sm border border-rule bg-page px-5 py-4 text-center">

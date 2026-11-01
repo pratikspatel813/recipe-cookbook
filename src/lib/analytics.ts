@@ -26,6 +26,17 @@ export type EventMap = {
     share_id: string | null; // set when saved from a friend's share link
   };
 
+  // ---- Accounts: prompted → code sent → completed ----
+  // trigger = what made them sign up. Only "share" for now, but naming it
+  // means we can compare triggers later if we add more.
+  signup_prompted: { trigger: "share" };
+  signup_code_sent: { trigger: "share" };
+  signup_completed: { trigger: "share"; seconds_to_complete: number };
+  // error_code is Supabase's short error name, e.g. "otp_expired".
+  signup_failed: { trigger: "share"; step: "send_code" | "verify_code"; error_code: string };
+  signin_completed: Record<string, never>;
+  signed_out: Record<string, never>;
+
   // ---- Sharing loop: shared → opened → saved by a friend ----
   // method: "native" = the phone's share sheet, "clipboard" = copied the link,
   // "link_shown" = copying was blocked, so we showed the link to copy by hand
@@ -50,10 +61,11 @@ export type EventMap = {
 
 export type EventName = keyof EventMap;
 
-export function track<E extends EventName>(eventName: E, properties: EventMap[E]): void {
+export function track<E extends EventName>(eventName: E, properties: EventMap[E]): Promise<void> {
   // Fire and forget: tracking must NEVER break or slow down the app.
-  // We don't await this, and any error is caught and only logged.
-  send(eventName, properties).catch((err) => console.warn("[analytics]", eventName, err));
+  // Callers normally don't await this, and any error is caught and only logged.
+  // (Await it only when the next step would break the insert, e.g. signing out.)
+  return send(eventName, properties).catch((err) => console.warn("[analytics]", eventName, err));
 }
 
 async function send(eventName: string, properties: object) {

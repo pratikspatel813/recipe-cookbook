@@ -38,6 +38,11 @@ export function ensureUser(): Promise<string> {
   return userPromise;
 }
 
+// Forget the cached user, e.g. after signing out or signing in as someone else.
+export function resetUser() {
+  userPromise = null;
+}
+
 // True if this page load created the user — i.e. a brand-new visitor.
 // Only meaningful after ensureUser() has finished.
 export function isNewVisitor(): boolean {

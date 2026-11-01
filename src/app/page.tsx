@@ -4,9 +4,11 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { listCollections, listRecipes, type Collection, type SavedRecipe } from "@/lib/db";
 import { track } from "@/lib/analytics";
+import { signOut, useAccount } from "@/lib/account";
 
 // The cookbook itself: chapters across the top, recipes below.
 export default function CookbookPage() {
+  const account = useAccount();
   const [collections, setCollections] = useState<Collection[]>([]);
   const [activeChapter, setActiveChapter] = useState<string | null>(null); // null = all recipes
   const [recipes, setRecipes] = useState<SavedRecipe[] | null>(null); // null = still loading
@@ -29,10 +31,31 @@ export default function CookbookPage() {
       .catch(() => setError(true));
   }, [activeChapter]);
 
+  async function handleSignOut() {
+    await track("signed_out", {}); // must land while we're still signed in
+    await signOut();
+    window.location.reload(); // start fresh with a new anonymous cookbook
+  }
+
+  const ownerName = account.status === "registered" ? account.displayName : null;
+
   return (
     <main className="mx-auto max-w-4xl px-4 py-10 sm:py-14">
+      <div className="flex justify-end text-sm italic text-ink-soft">
+        {account.status === "anonymous" && (
+          <Link href="/signin" className="hover:text-accent">
+            Sign in
+          </Link>
+        )}
+        {account.status === "registered" && (
+          <button onClick={handleSignOut} className="hover:text-accent">
+            Sign out
+          </button>
+        )}
+      </div>
+
       <header className="text-center">
-        <p className="text-xs uppercase tracking-[0.3em] text-ink-soft">My</p>
+        <p className="text-xs uppercase tracking-[0.3em] text-ink-soft">{ownerName ? `${ownerName}'s` : "My"}</p>
         <h1 className="font-display text-5xl sm:text-6xl">Cookbook</h1>
       </header>
 
