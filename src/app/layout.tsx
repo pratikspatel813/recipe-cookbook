@@ -16,9 +16,18 @@ const lora = Lora({
   subsets: ["latin"],
 });
 
+// metadataBase turns relative image URLs into full ones. Link previews need
+// full URLs, and on Vercel VERCEL_PROJECT_PRODUCTION_URL is the live domain.
+const siteUrl = process.env.VERCEL_PROJECT_PRODUCTION_URL
+  ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+  : "http://localhost:3000";
+
 export const metadata: Metadata = {
+  metadataBase: new URL(siteUrl),
   title: "My Cookbook",
   description: "Save recipes without the ads. Share them with friends.",
+  openGraph: { siteName: "Cookbook", type: "website" },
+  twitter: { card: "summary_large_image" },
 };
 
 export default function RootLayout({

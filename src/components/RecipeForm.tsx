@@ -1,7 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { parseIngredient, type Recipe } from "@/lib/recipe";
+import { shrinkPhoto, uploadPhoto } from "@/lib/photos";
+import { track } from "@/lib/analytics";
 
 // Write a recipe yourself, or edit an existing one.
 //
@@ -31,6 +33,10 @@ export function RecipeForm({
   const [ingredientsText, setIngredientsText] = useState(initial?.ingredients.map((i) => i.rawText).join("\n") ?? "");
   const [stepsText, setStepsText] = useState(initial?.steps.map((s) => s.text).join("\n") ?? "");
   const [sourceUrl, setSourceUrl] = useState(initial?.sourceUrl ?? "");
+  const [imageUrl, setImageUrl] = useState(initial?.imageUrl ?? null);
+  const [uploading, setUploading] = useState(false);
+  const [photoError, setPhotoError] = useState<string | null>(null);
+  const fileInput = useRef<HTMLInputElement>(null);
   // Shopping links, keyed by the ingredient's text. Keying by text (not by
   // line number) means a link stays with "2 tbsp ghee" even if you reorder lines.
   const [links, setLinks] = useState<Record<string, string>>(() =>
@@ -42,13 +48,37 @@ export function RecipeForm({
   const stepLines = toLines(stepsText);
   const badLinks = ingredientLines.filter((line) => links[line]?.trim() && !isWebLink(links[line]));
 
+  // The photo uploads as soon as it's picked, so saving the recipe stays instant.
+  async function handlePhoto(file: File | undefined) {
+    if (!file) return;
+    setUploading(true);
+    setPhotoError(null);
+    const started = performance.now();
+    try {
+      const photo = await shrinkPhoto(file);
+      setImageUrl(await uploadPhoto(photo));
+      track("photo_uploaded", {
+        original_kb: Math.round(file.size / 1024),
+        uploaded_kb: Math.round(photo.size / 1024),
+        ms_elapsed: Math.round(performance.now() - started),
+      });
+    } catch (err) {
+      console.error(err);
+      setPhotoError("Couldn't add that photo. Try a different one.");
+      track("photo_upload_failed", { error: err instanceof Error ? err.message.slice(0, 80) : "unknown" });
+    } finally {
+      setUploading(false);
+      if (fileInput.current) fileInput.current.value = ""; // so picking the same file again still fires
+    }
+  }
+
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     const parsedMinutes = parseInt(minutes, 10);
     onSubmit({
       title: title.trim(),
       description: description.trim() || null,
-      imageUrl: initial?.imageUrl ?? null,
+      imageUrl,
       sourceUrl: sourceUrl.trim() || null,
       author: initial?.author ?? null,
       servings: servings.trim() || null,
@@ -67,6 +97,35 @@ export function RecipeForm({
         <input required maxLength={120} value={title} onChange={(e) => setTitle(e.target.value)}
           placeholder="Grandma's dal" className={`${inputClass} font-display text-xl`} />
       </Field>
+
+      <div className="mt-4">
+        <p className="text-xs uppercase tracking-widest text-ink-soft">Photo (optional)</p>
+        {imageUrl ? (
+          <div className="relative mt-1">
+            {/* eslint-disable-next-line @next/next/no-img-element -- user photos and imported images from any site */}
+            <img src={imageUrl} alt="" className="h-48 w-full rounded-sm object-cover sm:h-64" />
+            <div className="absolute right-2 bottom-2 flex gap-2 text-sm">
+              <button type="button" onClick={() => fileInput.current?.click()} disabled={uploading}
+                className="rounded-sm bg-page/90 px-3 py-1 backdrop-blur hover:text-accent">
+                {uploading ? "Uploading…" : "Change"}
+              </button>
+              <button type="button" onClick={() => setImageUrl(null)} disabled={uploading}
+                className="rounded-sm bg-page/90 px-3 py-1 backdrop-blur hover:text-accent">
+                Remove
+              </button>
+            </div>
+          </div>
+        ) : (
+          <button type="button" onClick={() => fileInput.current?.click()} disabled={uploading}
+            className="mt-1 flex h-32 w-full flex-col items-center justify-center rounded-sm border border-dashed border-rule bg-paper text-sm italic text-ink-soft hover:border-accent hover:text-accent">
+            {uploading ? "Uploading…" : "+ Add a photo"}
+          </button>
+        )}
+        {/* accept="image/*" lets phones offer the camera too. iPhones hand over
+            HEIC photos as JPEG automatically. */}
+        <input ref={fileInput} type="file" accept="image/*" hidden onChange={(e) => handlePhoto(e.target.files?.[0])} />
+        {photoError && <p className="mt-1 text-sm text-accent">{photoError}</p>}
+      </div>
 
       <Field label="A line about it (optional)">
         <input maxLength={300} value={description} onChange={(e) => setDescription(e.target.value)}
@@ -139,7 +198,7 @@ export function RecipeForm({
 
       <button
         type="submit"
-        disabled={busy || !title.trim() || ingredientLines.length === 0 || stepLines.length === 0 || badLinks.length > 0}
+        disabled={busy || uploading || !title.trim() || ingredientLines.length === 0 || stepLines.length === 0 || badLinks.length > 0}
         className="mt-6 w-full rounded-sm bg-accent px-6 py-3 font-display text-on-accent transition hover:brightness-110 disabled:opacity-50 sm:w-auto"
       >
         {busy ? "Saving…" : submitLabel}

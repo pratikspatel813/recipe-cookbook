@@ -74,6 +74,7 @@ function changedFields(before: Recipe, after: Recipe): string[] {
     servings: r.servings ?? "",
     time: String(r.totalTimeMinutes ?? ""),
     source: r.sourceUrl ?? "",
+    photo: r.imageUrl ?? "",
     ingredients: r.ingredients.map((i) => i.rawText).join("\n"),
     steps: r.steps.map((s) => s.text).join("\n"),
     shopping_links: r.ingredients.map((i) => i.linkUrl ?? "").join("\n"),

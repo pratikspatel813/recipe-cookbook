@@ -105,6 +105,11 @@ export type EventMap = {
   // ---- Using the cookbook ----
   // fields_changed lists what was edited, e.g. ["ingredients", "steps"], so
   // we can see WHAT people fix — a sign of which parts our import gets wrong.
+  // Someone added their own photo. original_kb vs uploaded_kb shows how much
+  // shrinking saves; a failure here usually means an image format the
+  // browser can't read.
+  photo_uploaded: { original_kb: number; uploaded_kb: number; ms_elapsed: number };
+  photo_upload_failed: { error: string };
   recipe_edited: {
     recipe_id: string;
     import_method: string | null;

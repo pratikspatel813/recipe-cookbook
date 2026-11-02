@@ -36,11 +36,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     title,
     description,
-    openGraph: {
-      title,
-      description,
-      images: recipe.imageUrl ? [recipe.imageUrl] : [],
-    },
+    // The image itself is drawn by opengraph-image.tsx next to this file.
+    openGraph: { title, description },
+    twitter: { card: "summary_large_image", title, description },
   };
 }
 
