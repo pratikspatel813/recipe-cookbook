@@ -12,7 +12,16 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { listCollections, listRecipes, type Collection, type SavedRecipe } from "@/lib/db";
+import {
+  chapterErrorMessage,
+  createCollection,
+  deleteCollection,
+  listCollections,
+  listRecipes,
+  renameCollection,
+  type Collection,
+  type SavedRecipe,
+} from "@/lib/db";
 import { follow, getProfile, listConnections, listPosts, unfollow, type Person, type Post, type Profile } from "@/lib/social";
 import { signOut, useAccount } from "@/lib/account";
 import { track } from "@/lib/analytics";
@@ -224,11 +233,17 @@ function PostsTab({ posts, isOwn }: { posts: Post[] | null; isOwn: boolean }) {
 }
 
 // Your whole cookbook, private recipes included. Chapters are shown as
-// circles you tap to filter — Instagram's "story highlights".
+// circles you tap to filter — Instagram's "story highlights". This is also
+// where you make, rename and delete chapters.
 function CookbookTab() {
   const [collections, setCollections] = useState<Collection[]>([]);
   const [chapter, setChapter] = useState<string | null>(null);
   const [recipes, setRecipes] = useState<SavedRecipe[] | null>(null);
+  // The name box, when open: making a new chapter, or renaming the selected one.
+  const [naming, setNaming] = useState<"new" | "rename" | null>(null);
+  const [name, setName] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const selected = collections.find((c) => c.id === chapter) ?? null;
 
   useEffect(() => {
     listCollections().then(setCollections).catch(console.error);
@@ -241,18 +256,105 @@ function CookbookTab() {
 
   function choose(id: string | null) {
     setChapter(id);
+    closeNaming();
     track("chapter_filtered", { chapter_id: id });
+  }
+
+  function openNaming(mode: "new" | "rename") {
+    setNaming(mode);
+    setName(mode === "rename" ? (selected?.name ?? "") : "");
+    setError(null);
+  }
+
+  function closeNaming() {
+    setNaming(null);
+    setError(null);
+  }
+
+  const byName = (a: Collection, b: Collection) => a.name.localeCompare(b.name);
+
+  async function saveName(e: React.FormEvent) {
+    e.preventDefault();
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    try {
+      if (naming === "new") {
+        const created = await createCollection(trimmed);
+        setCollections((prev) => [...prev, created].sort(byName));
+        setChapter(created.id);
+        track("chapter_created", { chapter_id: created.id, source: "cookbook_tab" });
+      } else if (selected && trimmed !== selected.name) {
+        await renameCollection(selected.id, trimmed);
+        setCollections((prev) => prev.map((c) => (c.id === selected.id ? { ...c, name: trimmed } : c)).sort(byName));
+        track("chapter_renamed", { chapter_id: selected.id });
+      }
+      closeNaming();
+    } catch (err) {
+      setError(chapterErrorMessage(err, trimmed));
+    }
+  }
+
+  async function handleDelete() {
+    if (!selected) return;
+    const what = selected.recipeCount === 1 ? "1 recipe" : `${selected.recipeCount} recipes`;
+    if (!confirm(`Delete the “${selected.name}” chapter? Its ${what} will stay in your cookbook.`)) return;
+    try {
+      await deleteCollection(selected.id);
+      track("chapter_deleted", { chapter_id: selected.id, recipe_count: selected.recipeCount });
+      setCollections((prev) => prev.filter((c) => c.id !== selected.id));
+      setChapter(null);
+    } catch (err) {
+      console.error(err);
+      setError("Couldn't delete that chapter. Try again.");
+    }
   }
 
   return (
     <>
-      {collections.length > 0 && (
-        <div className="flex gap-4 overflow-x-auto px-4 py-4">
-          <Highlight label="All" active={chapter === null} onClick={() => choose(null)} />
-          {collections.map((c) => (
-            <Highlight key={c.id} label={c.name} count={c.recipeCount} active={chapter === c.id} onClick={() => choose(c.id)} />
-          ))}
+      <div className="flex gap-4 overflow-x-auto px-4 py-4">
+        <Highlight label="All" active={chapter === null} onClick={() => choose(null)} />
+        {collections.map((c) => (
+          <Highlight key={c.id} label={c.name} count={c.recipeCount} active={chapter === c.id} onClick={() => choose(c.id)} />
+        ))}
+        <Highlight label="New" icon="+" active={naming === "new"} onClick={() => openNaming("new")} />
+      </div>
+
+      {naming && (
+        <form onSubmit={saveName} className="mx-4 mb-3 flex items-center gap-2">
+          <input
+            autoFocus
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            onKeyDown={(e) => e.key === "Escape" && closeNaming()}
+            maxLength={60}
+            placeholder={naming === "new" ? "Chapter name, e.g. Sunday baking" : "New name"}
+            aria-label={naming === "new" ? "New chapter name" : "Rename chapter"}
+            className="min-w-0 flex-1 rounded-full border border-accent bg-page px-4 py-1.5 text-sm outline-none"
+          />
+          <button type="submit" disabled={!name.trim()}
+            className="rounded-full bg-accent px-4 py-1.5 text-sm text-on-accent disabled:opacity-40">
+            {naming === "new" ? "Add" : "Save"}
+          </button>
+          <button type="button" onClick={closeNaming} className="text-sm text-ink-soft hover:text-accent">
+            Cancel
+          </button>
+        </form>
+      )}
+
+      {selected && !naming && (
+        <div className="mx-4 mb-3 flex items-center justify-between text-sm">
+          <span className="font-display text-lg">{selected.name}</span>
+          <span className="flex gap-4 italic text-ink-soft">
+            <button onClick={() => openNaming("rename")} className="hover:text-accent">Rename</button>
+            <button onClick={handleDelete} className="hover:text-accent">Delete</button>
+          </span>
         </div>
+      )}
+      {error && <p className="mx-4 mb-3 text-sm text-accent">{error}</p>}
+      {collections.length === 0 && !naming && chapter === null && (
+        <p className="mx-4 mb-3 text-sm italic text-ink-soft">
+          Make chapters like Breakfast or Sunday baking to sort your recipes.
+        </p>
       )}
       {recipes === null && <p className="py-10 text-center italic text-ink-soft">…</p>}
       {recipes?.length === 0 && (
@@ -276,7 +378,13 @@ function CookbookTab() {
   );
 }
 
-function Highlight({ label, count, active, onClick }: { label: string; count?: number; active: boolean; onClick: () => void }) {
+function Highlight({ label, count, icon, active, onClick }: {
+  label: string;
+  count?: number;
+  icon?: string;
+  active: boolean;
+  onClick: () => void;
+}) {
   return (
     <button onClick={onClick} className="flex w-16 shrink-0 flex-col items-center gap-1">
       <span
@@ -284,7 +392,7 @@ function Highlight({ label, count, active, onClick }: { label: string; count?: n
           active ? "border-accent text-accent" : "border-rule text-ink-soft"
         }`}
       >
-        {count ?? "★"}
+        {icon ?? count ?? "★"}
       </span>
       <span className={`w-full truncate text-center text-xs ${active ? "text-accent" : "text-ink-soft"}`}>{label}</span>
     </button>

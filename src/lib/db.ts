@@ -166,6 +166,25 @@ export async function createCollection(name: string): Promise<Collection> {
   return { ...data, recipeCount: 0 };
 }
 
+export async function renameCollection(id: string, name: string): Promise<void> {
+  const { error } = await supabase.from("collections").update({ name: name.trim() }).eq("id", id);
+  if (error) throw error;
+}
+
+// Deleting a chapter only deletes the chapter: its links to recipes go with it
+// (on delete cascade), but the recipes themselves stay in your cookbook.
+export async function deleteCollection(id: string): Promise<void> {
+  const { error } = await supabase.from("collections").delete().eq("id", id);
+  if (error) throw error;
+}
+
+// A friendly message for a failed create or rename. 23505 is Postgres's code
+// for breaking a unique rule, here unique (owner_id, name).
+export function chapterErrorMessage(err: unknown, name: string): string {
+  if ((err as { code?: string })?.code === "23505") return `You already have a chapter called “${name.trim()}”.`;
+  return "Couldn't save that chapter. Try again.";
+}
+
 // Which collections is this recipe in?
 export async function getRecipeCollectionIds(recipeId: string): Promise<string[]> {
   const { data, error } = await supabase

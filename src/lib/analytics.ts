@@ -122,7 +122,11 @@ export type EventMap = {
   // Our best signal that they're actually COOKING, not just browsing.
   cooking_started: { recipe_id: string; ingredient_count: number };
   recipe_deleted: { recipe_id: string };
-  chapter_created: { chapter_id: string; source: "add_page" | "recipe_page" };
+  chapter_created: { chapter_id: string; source: "add_page" | "recipe_page" | "cookbook_tab" };
+  chapter_renamed: { chapter_id: string };
+  // recipe_count: how many recipes were in it. Deleting full chapters would
+  // suggest people want to reorganize, not that chapters are useless.
+  chapter_deleted: { chapter_id: string; recipe_count: number };
   chapter_filtered: { chapter_id: string | null }; // null = "All recipes"
   recipe_chapter_changed: { recipe_id: string; chapter_id: string; action: "added" | "removed" };
 };
