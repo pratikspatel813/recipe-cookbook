@@ -100,7 +100,13 @@ export function ProfileView({ profileId }: { profileId: string | null }) {
       {/* ---- Header ---- */}
       <header className="px-4">
         <div className="flex items-center justify-between text-sm italic text-ink-soft">
-          <span />
+          {isOwn ? (
+            <Link href="/metrics" className="hover:text-accent">
+              App metrics
+            </Link>
+          ) : (
+            <span />
+          )}
           {isOwn && account.status === "registered" && (
             <button onClick={handleSignOut} className="hover:text-accent">
               Sign out

@@ -2,7 +2,7 @@
 
 A recipe app built around one frustration: finding a recipe on TikTok, clicking through to a site full of ads and life stories, copying it into a cluttered notes app, then digging for it again when a friend asks.
 
-**Live app: https://recipe-cookbook-one.vercel.app**
+**Live app: https://recipe-cookbook-one.vercel.app** · **[Live metrics dashboard](https://recipe-cookbook-one.vercel.app/metrics)**
 
 Here you paste a link and get just the recipe, keep everything in one cookbook, and share it in one tap. It's built as a product data science project: every feature logs its own events, and the analysis is in SQL.
 
@@ -22,6 +22,7 @@ Here you paste a link and get just the recipe, keep everything in one cookbook, 
 |---|---|
 | [`src/lib/analytics.ts`](src/lib/analytics.ts) | The tracking plan: every event and its properties, enforced by TypeScript |
 | [`supabase/migrations/`](supabase/migrations) | The database schema, one numbered migration per change, with row-level security |
+| [`/metrics`](src/app/metrics/page.tsx) + [`008_metrics.sql`](supabase/migrations/008_metrics.sql) | The live dashboard: one database function computes every metric and returns only aggregates |
 | [`supabase/analysis/`](supabase/analysis) | SQL for the core metrics: import success, time to recipe, funnels, K-factor, sign-up conversion, shopping-link click-through |
 | [`supabase/scripts/merge_users.sql`](supabase/scripts/merge_users.sql) | Identity merge for users whose anonymous session was lost |
 

@@ -51,7 +51,7 @@ select
   count(c.user_id)             as views_with_a_click,
   round(100.0 * count(c.user_id) / nullif(count(*), 0), 1) as ctr_pct
 from views v
-join linked_recipes lr on lr.recipe_id = v.recipe_id
+join linked_recipes lr using (recipe_id)
 left join clicks c using (user_id, recipe_id, day, surface)
 group by v.surface;
 
