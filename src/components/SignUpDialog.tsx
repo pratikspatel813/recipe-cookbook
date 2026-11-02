@@ -94,7 +94,7 @@ export function SignUpDialog({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-ink/40 p-4 sm:items-center" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-scrim p-4 sm:items-center" onClick={onClose}>
       <div
         role="dialog"
         aria-modal="true"
@@ -157,7 +157,7 @@ export function SignUpDialog({
             <p className="mt-2 text-sm italic text-ink-soft">Your cookbook is saved to {email}.</p>
             <button
               onClick={onDone}
-              className="mt-5 w-full rounded-sm bg-accent px-6 py-3 font-display text-page transition hover:brightness-110"
+              className="mt-5 w-full rounded-sm bg-accent px-6 py-3 font-display text-on-accent transition hover:brightness-110"
             >
               {doneLabel}
             </button>
@@ -189,7 +189,7 @@ function DialogButtons({
       <button
         type="submit"
         disabled={busy}
-        className="rounded-sm bg-accent px-5 py-2 font-display text-page transition hover:brightness-110 disabled:opacity-60"
+        className="rounded-sm bg-accent px-5 py-2 font-display text-on-accent transition hover:brightness-110 disabled:opacity-60"
       >
         {busy ? "…" : label}
       </button>

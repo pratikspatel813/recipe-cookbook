@@ -72,7 +72,7 @@ export default function SignInPage() {
           />
           <button
             disabled={busy}
-            className="mt-4 w-full rounded-sm bg-accent px-6 py-3 font-display text-page transition hover:brightness-110 disabled:opacity-60"
+            className="mt-4 w-full rounded-sm bg-accent px-6 py-3 font-display text-on-accent transition hover:brightness-110 disabled:opacity-60"
           >
             {busy ? "Sending…" : "Email me a code"}
           </button>
@@ -93,7 +93,7 @@ export default function SignInPage() {
           />
           <button
             disabled={busy}
-            className="mt-4 w-full rounded-sm bg-accent px-6 py-3 font-display text-page transition hover:brightness-110 disabled:opacity-60"
+            className="mt-4 w-full rounded-sm bg-accent px-6 py-3 font-display text-on-accent transition hover:brightness-110 disabled:opacity-60"
           >
             {busy ? "Checking…" : "Sign in"}
           </button>

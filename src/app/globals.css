@@ -2,12 +2,50 @@
 
 /* Cookbook palette: cream paper, warm ink, a tomato-red accent. */
 :root {
+  color-scheme: light;
   --paper: #f7f1e3;
   --page: #fffdf7;
   --ink: #2b2420;
   --ink-soft: #6b5d52;
   --rule: #e4d9c3;
   --accent: #b5452f;
+  --on-accent: #fffdf7; /* text on an accent button */
+  --scrim: rgb(43 36 32 / 0.4); /* the dim layer behind a dialog */
+  --card-shadow: 0 1px 0 #e4d9c3, 0 12px 30px -12px rgb(60 40 20 / 0.25);
+}
+
+/* Dark: the same cookbook by candlelight. Warm browns instead of pure black,
+   and a lighter tomato so it still stands out (every text pair is >= 4.5:1).
+
+   The theme follows the device setting unless the person picked one:
+   <html data-theme="light|dark"> overrides it (see ThemeToggle). The dark
+   values are written twice because CSS can't share one block between a media
+   query and a selector. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --paper: #1c1815;
+    --page: #262019;
+    --ink: #efe6d8;
+    --ink-soft: #b3a493;
+    --rule: #3a3129;
+    --accent: #d9705a;
+    --on-accent: #1c1815;
+    --scrim: rgb(0 0 0 / 0.6);
+    --card-shadow: 0 1px 0 #3a3129, 0 12px 30px -12px rgb(0 0 0 / 0.6);
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --paper: #1c1815;
+  --page: #262019;
+  --ink: #efe6d8;
+  --ink-soft: #b3a493;
+  --rule: #3a3129;
+  --accent: #d9705a;
+  --on-accent: #1c1815;
+  --scrim: rgb(0 0 0 / 0.6);
+  --card-shadow: 0 1px 0 #3a3129, 0 12px 30px -12px rgb(0 0 0 / 0.6);
 }
 
 @theme inline {
@@ -17,6 +55,8 @@
   --color-ink-soft: var(--ink-soft);
   --color-rule: var(--rule);
   --color-accent: var(--accent);
+  --color-on-accent: var(--on-accent);
+  --color-scrim: var(--scrim);
   --font-display: var(--font-playfair);
   --font-serif: var(--font-lora);
 }

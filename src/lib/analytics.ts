@@ -15,6 +15,9 @@ export type SignupTrigger = "share" | "follow" | "publish";
 export type EventMap = {
   // ---- Navigation ----
   page_viewed: { path: string; referrer_domain: string | null };
+  // Which button on the landing page someone used to get into the app.
+  landing_cta_clicked: { cta: "start" | "browse" | "metrics" | "github" };
+  theme_changed: { theme: "system" | "light" | "dark" };
 
   // ---- Import funnel: started → succeeded/failed → saved ----
   import_started: { domain: string | null };

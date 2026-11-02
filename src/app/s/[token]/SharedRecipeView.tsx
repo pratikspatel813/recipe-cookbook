@@ -95,7 +95,7 @@ export function SharedRecipeView({ shared }: { shared: SharedRecipe }) {
             <button
               onClick={handleSave}
               disabled={saving}
-              className="w-full rounded-sm bg-accent px-6 py-3 font-display text-page transition hover:brightness-110 disabled:opacity-60 sm:w-auto"
+              className="w-full rounded-sm bg-accent px-6 py-3 font-display text-on-accent transition hover:brightness-110 disabled:opacity-60 sm:w-auto"
             >
               {saving ? "Saving…" : "Save to my cookbook"}
             </button>

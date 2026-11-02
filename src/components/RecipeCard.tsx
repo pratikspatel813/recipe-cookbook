@@ -55,7 +55,7 @@ export function RecipeCard({
   const sourceHost = recipe.sourceUrl ? new URL(recipe.sourceUrl).hostname.replace(/^www\./, "") : null;
 
   return (
-    <article className="overflow-hidden rounded-sm border border-rule bg-page shadow-[0_1px_0_#e4d9c3,0_12px_30px_-12px_rgba(60,40,20,0.25)]">
+    <article className="overflow-hidden rounded-sm border border-rule bg-page shadow-[var(--card-shadow)]">
       {recipe.imageUrl && (
         // eslint-disable-next-line @next/next/no-img-element -- images come from any recipe site
         <img src={recipe.imageUrl} alt="" className="h-56 w-full object-cover sm:h-72" />

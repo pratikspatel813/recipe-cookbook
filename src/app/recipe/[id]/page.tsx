@@ -174,7 +174,7 @@ export default function RecipePage() {
                 onClick={togglePublic}
                 disabled={busy}
                 className={`ml-3 shrink-0 rounded-sm px-3 py-1.5 font-display text-sm transition disabled:opacity-60 ${
-                  recipe.isPublic ? "border border-rule hover:border-accent" : "bg-accent text-page hover:brightness-110"
+                  recipe.isPublic ? "border border-rule hover:border-accent" : "bg-accent text-on-accent hover:brightness-110"
                 }`}
               >
                 {recipe.isPublic ? "Unpost" : "Post to profile"}
@@ -204,7 +204,7 @@ export default function RecipePage() {
             <button
               onClick={saveCopy}
               disabled={busy}
-              className="rounded-sm bg-accent px-4 py-2 font-display text-sm text-page transition hover:brightness-110 disabled:opacity-60"
+              className="rounded-sm bg-accent px-4 py-2 font-display text-sm text-on-accent transition hover:brightness-110 disabled:opacity-60"
             >
               {busy ? "Saving…" : "Save to my cookbook"}
             </button>

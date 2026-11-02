@@ -16,6 +16,8 @@ const TABS = [
 
 export function BottomNav() {
   const pathname = usePathname();
+  // The landing page has its own buttons into the app.
+  if (pathname === "/welcome") return null;
 
   return (
     <nav

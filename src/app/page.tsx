@@ -3,21 +3,31 @@
 // Home: the feed. Newest public recipes from people you follow, newest first.
 // If you don't follow anyone yet (or they haven't posted), it falls back to
 // "Discover" — recent posts from everyone — so the screen is never empty.
+// Someone's very first visit goes to the landing page (/welcome) instead.
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { listPosts, type Post } from "@/lib/social";
 import { useAccount } from "@/lib/account";
 import { track } from "@/lib/analytics";
 import { PostCard } from "@/components/PostViews";
+import { hasBeenWelcomed } from "@/lib/welcome";
 
 export default function HomeFeed() {
   const account = useAccount();
   const [feed, setFeed] = useState<Post[] | null>(null);
   const [discover, setDiscover] = useState<Post[]>([]);
+  const router = useRouter();
+  const [welcomed, setWelcomed] = useState(false);
 
   useEffect(() => {
-    if (account.status === "loading") return;
+    if (hasBeenWelcomed()) setWelcomed(true);
+    else router.replace("/welcome");
+  }, [router]);
+
+  useEffect(() => {
+    if (!welcomed || account.status === "loading") return;
     (async () => {
       const following = await listPosts({ onlyFollowing: true });
       setFeed(following);
@@ -30,12 +40,15 @@ export default function HomeFeed() {
       console.error(err);
       setFeed([]);
     });
-  }, [account]);
+  }, [account, welcomed]);
 
   return (
     <main className="mx-auto max-w-xl">
-      <header className="sticky top-0 z-30 border-b border-rule bg-paper/95 px-4 py-3 backdrop-blur">
+      <header className="sticky top-0 z-30 flex items-baseline justify-between border-b border-rule bg-paper/95 px-4 py-3 backdrop-blur">
         <h1 className="font-display text-2xl">Cookbook</h1>
+        <Link href="/welcome" className="text-sm italic text-ink-soft hover:text-accent">
+          About
+        </Link>
       </header>
 
       {feed === null && <p className="py-20 text-center italic text-ink-soft">Setting the table…</p>}
@@ -48,7 +61,7 @@ export default function HomeFeed() {
         <div className="px-6 py-10 text-center">
           <p className="font-display text-2xl">Your feed is empty</p>
           <p className="mt-2 text-sm italic text-ink-soft">Follow friends to see the recipes they post here.</p>
-          <Link href="/search" className="mt-4 inline-block rounded-sm bg-accent px-5 py-2 font-display text-page">
+          <Link href="/search" className="mt-4 inline-block rounded-sm bg-accent px-5 py-2 font-display text-on-accent">
             Find people
           </Link>
         </div>

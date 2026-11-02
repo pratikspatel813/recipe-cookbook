@@ -18,6 +18,7 @@ import { signOut, useAccount } from "@/lib/account";
 import { track } from "@/lib/analytics";
 import { Avatar, PostGrid, PostTile } from "./PostViews";
 import { SignUpDialog } from "./SignUpDialog";
+import { ThemeToggle } from "./ThemeToggle";
 
 type Tab = "posts" | "cookbook";
 
@@ -107,15 +108,20 @@ export function ProfileView({ profileId }: { profileId: string | null }) {
           ) : (
             <span />
           )}
-          {isOwn && account.status === "registered" && (
-            <button onClick={handleSignOut} className="hover:text-accent">
-              Sign out
-            </button>
-          )}
-          {isAnonymousSelf && (
-            <Link href="/signin" className="hover:text-accent">
-              Sign in
-            </Link>
+          {isOwn && (
+            <div className="flex items-center gap-3">
+              <ThemeToggle />
+              {account.status === "registered" && (
+                <button onClick={handleSignOut} className="hover:text-accent">
+                  Sign out
+                </button>
+              )}
+              {isAnonymousSelf && (
+                <Link href="/signin" className="hover:text-accent">
+                  Sign in
+                </Link>
+              )}
+            </div>
           )}
         </div>
 
@@ -139,7 +145,7 @@ export function ProfileView({ profileId }: { profileId: string | null }) {
             onClick={toggleFollow}
             disabled={followBusy}
             className={`mt-5 w-full rounded-sm py-2 font-display transition disabled:opacity-60 ${
-              profile.isFollowing ? "border border-rule bg-page text-ink hover:border-accent" : "bg-accent text-page hover:brightness-110"
+              profile.isFollowing ? "border border-rule bg-page text-ink hover:border-accent" : "bg-accent text-on-accent hover:brightness-110"
             }`}
           >
             {profile.isFollowing ? "Following" : "Follow"}
@@ -199,7 +205,7 @@ function PostsTab({ posts, isOwn }: { posts: Post[] | null; isOwn: boolean }) {
           {isOwn ? "Write a recipe of your own and post it to your profile." : "Nothing shared publicly yet."}
         </p>
         {isOwn && (
-          <Link href="/add" className="mt-5 inline-block rounded-sm bg-accent px-5 py-2 font-display text-page">
+          <Link href="/add" className="mt-5 inline-block rounded-sm bg-accent px-5 py-2 font-display text-on-accent">
             Write a recipe
           </Link>
         )}
@@ -252,7 +258,7 @@ function CookbookTab() {
       {recipes?.length === 0 && (
         <div className="px-6 py-14 text-center">
           <p className="font-display text-2xl">{chapter ? "This chapter is empty" : "Your cookbook is empty"}</p>
-          <Link href="/add" className="mt-5 inline-block rounded-sm bg-accent px-5 py-2 font-display text-page">
+          <Link href="/add" className="mt-5 inline-block rounded-sm bg-accent px-5 py-2 font-display text-on-accent">
             Add a recipe
           </Link>
         </div>
@@ -333,7 +339,7 @@ function ConnectionsSheet({ profileId, kind, onClose }: { profileId: string; kin
   }, [profileId, kind]);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-ink/40 sm:items-center" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-scrim sm:items-center" onClick={onClose}>
       <div
         role="dialog"
         aria-modal="true"

@@ -185,7 +185,7 @@ export default function AiKitchenPage() {
                 type="button"
                 aria-pressed={on}
                 onClick={() => toggleRestriction(id)}
-                className={`rounded-full border px-3 py-1 text-sm transition ${on ? "border-accent bg-accent text-page" : "border-rule hover:border-accent"}`}
+                className={`rounded-full border px-3 py-1 text-sm transition ${on ? "border-accent bg-accent text-on-accent" : "border-rule hover:border-accent"}`}
               >
                 {RESTRICTIONS[id].label}
               </button>
@@ -207,7 +207,7 @@ export default function AiKitchenPage() {
         <button
           type="submit"
           disabled={!canSubmit}
-          className="mt-6 w-full rounded-sm bg-accent px-6 py-3 font-display text-page transition hover:brightness-110 disabled:opacity-50 sm:w-auto"
+          className="mt-6 w-full rounded-sm bg-accent px-6 py-3 font-display text-on-accent transition hover:brightness-110 disabled:opacity-50 sm:w-auto"
         >
           {busy ? "Cooking it up… (this can take a minute)" : mode === "adapt" ? "Adapt recipe" : "Create recipe"}
         </button>
@@ -230,7 +230,7 @@ export default function AiKitchenPage() {
           <button
             onClick={handleSave}
             disabled={saving}
-            className="mt-4 w-full rounded-sm bg-accent px-6 py-3 font-display text-page transition hover:brightness-110 disabled:opacity-60"
+            className="mt-4 w-full rounded-sm bg-accent px-6 py-3 font-display text-on-accent transition hover:brightness-110 disabled:opacity-60"
           >
             {saving ? "Saving…" : "Save to my cookbook"}
           </button>

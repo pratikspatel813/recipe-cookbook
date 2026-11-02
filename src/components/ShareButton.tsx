@@ -65,7 +65,7 @@ export function ShareButton({ recipeId, title }: { recipeId: string; title: stri
       <button
         onClick={handleClick}
         disabled={status === "working" || account.status === "loading"}
-        className="rounded-sm bg-accent px-4 py-1.5 font-display text-sm text-page transition hover:brightness-110 disabled:opacity-60"
+        className="rounded-sm bg-accent px-4 py-1.5 font-display text-sm text-on-accent transition hover:brightness-110 disabled:opacity-60"
       >
         {label}
       </button>

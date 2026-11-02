@@ -45,7 +45,7 @@ export function ChapterPicker({
             onClick={() => onToggle(c.id, !selected)}
             aria-pressed={selected}
             className={`rounded-full border px-3 py-1 text-sm transition ${
-              selected ? "border-accent bg-accent text-page" : "border-rule bg-page hover:border-accent"
+              selected ? "border-accent bg-accent text-on-accent" : "border-rule bg-page hover:border-accent"
             }`}
           >
             {c.name}
