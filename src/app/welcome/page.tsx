@@ -148,7 +148,7 @@ function BeforeAfter() {
         <figcaption className="mb-3 text-xs uppercase tracking-[0.2em] text-ink-soft">A recipe website</figcaption>
         <div className="space-y-2 text-xs text-ink-soft" aria-hidden>
           <Block tall>Ad</Block>
-          <p className="italic">The first time I made this dal was a rainy autumn in my grandmother&rsquo;s kitchen…</p>
+          <p className="italic">Every holiday, there was one dish everyone fought over: Tini&rsquo;s mac and cheese…</p>
           <div className="h-2 w-11/12 rounded bg-rule" />
           <div className="h-2 w-4/5 rounded bg-rule" />
           <Block>Ad</Block>
@@ -161,10 +161,23 @@ function BeforeAfter() {
 
       <figure className="rounded-lg border border-accent bg-page p-4 shadow-[var(--card-shadow)]">
         <figcaption className="mb-3 text-xs uppercase tracking-[0.2em] text-accent">The same recipe here</figcaption>
-        <p className="font-display text-xl">Weeknight dal</p>
-        <p className="text-xs italic text-ink-soft">Serves 4 · 30 min</p>
+        <p className="font-display text-xl">Tini&rsquo;s mac and cheese</p>
+        <p className="text-xs italic text-ink-soft">Serves 8 · 45 min</p>
         <ul className="mt-3 space-y-1 text-sm">
-          {["1 cup red lentils", "3 cups water", "1 tsp turmeric", "2 tbsp ghee", "1 tsp cumin seeds", "A pinch of asafoetida"].map(
+          {[
+            "1 lb cavatappi pasta",
+            "1 lb mozzarella, shredded",
+            "1 lb Colby Jack, shredded",
+            "½ lb sharp cheddar, shredded",
+            "3 tbsp unsalted butter",
+            "3 tbsp all-purpose flour",
+            "1 can (12 oz) evaporated milk",
+            "2 cups heavy cream",
+            "1 tbsp Dijon mustard",
+            "1 tbsp smoked paprika",
+            "½ tbsp salt",
+            "½ tbsp black pepper",
+          ].map(
             (i) => (
               <li key={i} className="flex gap-2">
                 <span className="mt-1.5 size-2 shrink-0 rounded-full border border-accent" />
@@ -174,8 +187,8 @@ function BeforeAfter() {
           )}
         </ul>
         <p className="mt-3 text-sm text-ink-soft">
-          <span className="font-display text-accent">1.</span> Rinse the lentils and simmer in the water with the
-          turmeric until soft…
+          <span className="font-display text-accent">1.</span> Boil the cavatappi for about 7 minutes, so it&rsquo;s
+          still very firm…
         </p>
       </figure>
     </section>
